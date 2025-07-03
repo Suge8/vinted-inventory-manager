@@ -65,12 +65,13 @@ def build_windows_executable():
     ])
     
     try:
-        result = subprocess.run(cmd, check=True, capture_output=True, text=True)
+        result = subprocess.run(cmd, check=True, capture_output=True, text=True, encoding='utf-8', errors='ignore')
         print("Windows .exe构建成功!")
         return True
     except subprocess.CalledProcessError as e:
         print(f"构建失败: {e}")
-        print(f"错误输出: {e.stderr}")
+        if e.stderr:
+            print(f"错误输出: {e.stderr}")
         return False
 
 
@@ -102,8 +103,8 @@ def main():
     
     # 检查是否安装了 PyInstaller
     try:
-        result = subprocess.run(['pyinstaller', '--version'], 
-                              check=True, capture_output=True, text=True)
+        result = subprocess.run(['pyinstaller', '--version'],
+                              check=True, capture_output=True, text=True, encoding='utf-8', errors='ignore')
         print(f"PyInstaller版本: {result.stdout.strip()}")
     except (subprocess.CalledProcessError, FileNotFoundError):
         print("❌ 错误: 未找到 PyInstaller，请先安装:")
