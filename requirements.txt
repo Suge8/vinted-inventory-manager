@@ -1,0 +1,31 @@
+# 核心依赖
+requests>=2.31.0
+selenium>=4.15.0
+beautifulsoup4>=4.12.0
+lxml>=4.9.0
+
+# GUI 框架
+tkinter-tooltip>=2.0.0
+
+# 数据处理
+pandas>=2.1.0
+
+# 日志和配置
+python-dotenv>=1.0.0
+
+# 开发和测试
+pytest>=7.4.0
+pytest-cov>=4.1.0
+
+# 打包工具
+pyinstaller>=6.0.0
+
+# 网络请求增强
+urllib3>=2.0.0
+certifi>=2023.7.22
+
+# 时间处理
+python-dateutil>=2.8.2
+
+# JSON 处理
+jsonschema>=4.19.0

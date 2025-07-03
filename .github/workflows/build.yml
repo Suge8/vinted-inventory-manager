@@ -1,0 +1,103 @@
+name: Build Cross-Platform Executables
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pyinstaller
+    
+    - name: Build Windows executable
+      run: python build_windows.py
+    
+    - name: Upload Windows artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: vinted-inventory-manager-windows
+        path: dist/VintedInventoryManager.exe
+
+  build-macos:
+    runs-on: macos-latest
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pyinstaller
+    
+    - name: Build macOS executable
+      run: python build.py
+    
+    - name: Upload macOS artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: vinted-inventory-manager-macos
+        path: |
+          dist/VintedInventoryManager
+          dist/VintedInventoryManager.app
+
+  create-release:
+    needs: [build-windows, build-macos]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    steps:
+    - name: Download Windows artifact
+      uses: actions/download-artifact@v3
+      with:
+        name: vinted-inventory-manager-windows
+        path: ./windows
+    
+    - name: Download macOS artifact
+      uses: actions/download-artifact@v3
+      with:
+        name: vinted-inventory-manager-macos
+        path: ./macos
+    
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          windows/VintedInventoryManager.exe
+          macos/VintedInventoryManager
+          macos/VintedInventoryManager.app
+        body: |
+          ## Vinted.nl 库存宝 - 跨平台版本
+          
+          ### 📦 下载说明
+          - **Windows用户**: 下载 `VintedInventoryManager.exe`
+          - **macOS用户**: 下载 `VintedInventoryManager.app`
+          
+          ### ✨ 功能特性
+          - 🔄 自动化数据采集
+          - 👥 多账户管理
+          - 📊 智能分类
+          - 🖥️ 现代化界面
+          
+          ### 🔧 系统要求
+          - **Windows**: Windows 10/11 64位 + 比特浏览器
+          - **macOS**: macOS 10.14+ + 比特浏览器
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

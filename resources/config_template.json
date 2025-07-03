@@ -1,0 +1,31 @@
+{
+  "bitbrowser": {
+    "api_url": "http://127.0.0.1:54345",
+    "window_name": "vinted_inventory_script",
+    "timeout": 30,
+    "retry_count": 3
+  },
+  "vinted": {
+    "base_url": "https://www.vinted.nl",
+    "page_load_timeout": 15,
+    "element_wait_timeout": 10,
+    "scroll_pause_time": 2
+  },
+  "scraping": {
+    "max_concurrent_requests": 3,
+    "delay_between_requests": 1,
+    "max_retries": 3,
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+  },
+  "output": {
+    "report_format": "txt",
+    "output_directory": "~/Desktop",
+    "filename_template": "vinted_inventory_report_{timestamp}.txt",
+    "encoding": "utf-8"
+  },
+  "logging": {
+    "level": "INFO",
+    "format": "[%(asctime)s] %(levelname)s: %(message)s",
+    "date_format": "%Y-%m-%d %H:%M:%S"
+  }
+}
