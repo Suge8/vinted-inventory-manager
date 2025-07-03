@@ -26,6 +26,18 @@ jobs:
     - name: Build Windows executable
       run: python build_windows_simple.py
 
+    - name: Verify Windows executable
+      run: |
+        if [ -f "dist/VintedInventoryManager.exe" ]; then
+          echo "✅ Windows .exe file created successfully"
+          ls -la dist/VintedInventoryManager.exe
+        else
+          echo "❌ Windows .exe file not found"
+          ls -la dist/
+          exit 1
+        fi
+      shell: bash
+
     - name: Upload Windows artifact
       uses: actions/upload-artifact@v4
       with:
@@ -51,12 +63,16 @@ jobs:
     - name: Build macOS executable
       run: python build.py
 
+    - name: Create macOS app archive
+      run: |
+        cd dist
+        zip -r VintedInventoryManager-macOS.zip VintedInventoryManager.app
+
     - name: Upload macOS artifact
       uses: actions/upload-artifact@v4
       with:
         name: vinted-inventory-manager-macos
-        path: |
-          dist/VintedInventoryManager.app
+        path: dist/VintedInventoryManager-macOS.zip
 
   create-release:
     needs: [build-windows, build-macos]
@@ -80,7 +96,7 @@ jobs:
       with:
         files: |
           windows/VintedInventoryManager.exe
-          macos/VintedInventoryManager.app
+          macos/VintedInventoryManager-macOS.zip
         body: |
           ## Vinted.nl 库存宝 - 跨平台版本
           
