@@ -38,16 +38,13 @@ def build_executable():
         exe_name = "Vinted 库存宝"
 
     # PyInstaller 命令参数
-    if current_os == "Darwin":  # macOS - 只生成.app包
+    if current_os == "Darwin":  # macOS - 生成.app包
         cmd = [
             'pyinstaller',
-            '--onedir',                     # 目录模式，生成.app包
+            '--onefile',                    # 单文件模式
             '--windowed',                   # 无控制台窗口
-            f'--name={exe_name.split(".")[0]}', # 可执行文件名称（不含扩展名）
-            '--distpath=dist',              # 输出目录
-            '--workpath=build',             # 工作目录
-            '--specpath=.',                 # spec文件位置
-            '--add-data=resources:resources',  # 添加资源文件
+            f'--name={exe_name}',           # 应用名称
+            '--add-data=src:src',           # 添加源码
             '--add-data=assets:assets',     # 添加图标资源
             '--hidden-import=tkinter',      # 隐式导入
             '--hidden-import=customtkinter', # 现代UI库
@@ -56,6 +53,7 @@ def build_executable():
             '--hidden-import=selenium',
             '--hidden-import=requests',
             '--hidden-import=beautifulsoup4',
+            '--hidden-import=lxml',
             'src/main.py'                   # 主程序文件
         ]
     else:  # Windows/Linux - 生成单文件
@@ -97,10 +95,34 @@ def build_executable():
         result = subprocess.run(cmd, check=True, capture_output=True, text=True)
         print("构建成功!")
 
-        # 在macOS上，只生成.app包
+        # 在macOS上，只生成.app包并清理其他文件
         if current_os == "Darwin":
             print("macOS构建完成:")
-            print("- VintedInventoryManager.app (应用程序包)")
+
+            # 检查.app文件
+            app_path = Path(f'dist/{exe_name}')
+            if app_path.exists() and app_path.is_dir():
+                # 计算.app文件大小
+                total_size = sum(f.stat().st_size for f in app_path.rglob('*') if f.is_file())
+                size_mb = total_size / (1024 * 1024)
+                print(f"- {exe_name} ({size_mb:.1f} MB)")
+
+                # 清理dist目录中的其他文件，只保留.app
+                dist_path = Path('dist')
+                for item in dist_path.iterdir():
+                    if item.name != exe_name:
+                        if item.is_file():
+                            item.unlink()
+                            print(f"清理文件: {item.name}")
+                        elif item.is_dir():
+                            import shutil
+                            shutil.rmtree(item)
+                            print(f"清理目录: {item.name}")
+
+                print(f"\n✅ 只保留了 {exe_name} 文件")
+            else:
+                print("❌ .app文件未找到")
+
             print("\n注意: 要为Windows用户构建.exe文件，需要在Windows系统上运行此脚本")
         else:
             print(f"构建完成: {exe_name}")
