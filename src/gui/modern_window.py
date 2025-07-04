@@ -16,11 +16,12 @@ ctk.set_appearance_mode("light")  # 可选: "light", "dark", "system"
 ctk.set_default_color_theme("blue")  # 可选: "blue", "green", "dark-blue"
 
 class ModernVintedApp:
-    def __init__(self):
+    def __init__(self, config=None):
+        self.config = config or {}
         self.root = ctk.CTk()
         self.setup_window()
         self.create_widgets()
-        
+
         # 应用状态
         self.scraper = None
         self.browser_manager = None

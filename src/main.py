@@ -19,7 +19,7 @@ sys.path.insert(0, str(project_root))
 
 from src.utils.logger import setup_logger
 from src.utils.config import ConfigManager
-from src.gui.main_window import VintedInventoryApp
+from src.gui.modern_window import ModernVintedApp
 
 
 def main():
@@ -39,10 +39,10 @@ def main():
         config = config_manager.load_config()
         print("✅ 配置加载完成")
 
-        # 启动GUI应用
-        print("🖥️ 创建GUI应用...")
-        app = VintedInventoryApp(config)
-        print("✅ GUI应用创建完成")
+        # 启动现代化GUI应用
+        print("🖥️ 创建现代化GUI应用...")
+        app = ModernVintedApp(config)
+        print("✅ 现代化GUI应用创建完成")
 
         print("🎯 启动应用主循环...")
         app.run()
