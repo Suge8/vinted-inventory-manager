@@ -1,43 +1,77 @@
-# Vinted.nl 库存宝
+# Vinted 库存宝 / Vinted Inventory Manager
 
-一个针对 Vinted.nl 网站的自动化库存管理解决方案，通过比特浏览器API采集员工账户的商品库存信息。
+<div align="center">
 
-## ✨ 功能特性
+[![GitHub release](https://img.shields.io/github/v/release/Suge8/vinted-inventory-manager)](https://github.com/Suge8/vinted-inventory-manager/releases)
+[![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows-blue)](https://github.com/Suge8/vinted-inventory-manager/releases)
+[![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
-- 🔄 **自动化数据采集**：通过比特浏览器API自动访问 Vinted.nl 网站
-- 👥 **多账户管理**：支持批量处理员工账户库存信息
-- 📊 **智能分类**：自动识别有库存、无库存和访问异常的账户
-- 🖥️ **现代化界面**：简洁美观的桌面应用程序，支持emoji装饰
-- 📄 **详细报告**：生成格式化的 TXT 报告文件
-- ⚡ **实时监控**：显示采集进度和状态日志
-- 🌐 **多语言支持**：支持荷兰语、英语等多种语言界面
-- 📋 **分页检测**：智能检测关注列表分页，确保采集完整
+**Language / 语言**: [🇺🇸 English](#english) | [🇨🇳 中文](#中文)
 
-## 🔧 系统要求
+</div>
 
-- macOS 10.14+ 或 Windows 10/11 64位系统
-- 比特浏览器 (BitBrowser)
-- 网络连接
+---
+
+## 🇨🇳 中文
+
+> 🛍️ **自动化Vinted.nl库存监控工具** - 实时监控员工账户库存状态，自动发现待补货账号
+
+一个专为Vinted.nl设计的库存管理工具，通过BitBrowser API自动监控多个员工账户的库存状态，及时发现需要补货的账号。
+
+## 🎯 核心功能
+
+### 📊 **智能库存监控**
+- 自动检测员工账户库存状态
+- 实时发现无库存账号（待补货）
+- 支持多管理员账户同时监控
+- 24/7循环监控模式
+
+### 🔔 **即时提醒系统**
+- 🎵 音效提醒：发现待补货账号时播放提示音
+- ⚠️ 视觉提醒：橙色警告图标闪烁
+- 📋 持久显示：待补货账号列表持续显示
+- 🔄 自动更新：补货后自动从列表移除
+
+### 🖥️ **现代化界面**
+- 简洁直观的6步操作流程
+- 实时进度显示和状态更新
+- 美观的HTML格式报告生成
+- 支持macOS和Windows双平台
+
+## 📥 下载安装
+
+### 💾 **直接下载**（推荐）
+前往 [Releases页面](https://github.com/Suge8/vinted-inventory-manager/releases) 下载最新版本：
+
+- **macOS**: `Vinted 库存宝.app`
+- **Windows**: `Vinted 库存宝.exe`
+
+> ⚠️ **重要提醒**: Windows版本可能被杀毒软件误报，这是正常现象。请查看 [下载指南](DOWNLOAD_GUIDE.md) 了解如何安全下载和使用。
+
+### 🔧 **系统要求**
+- **macOS**: 10.14+ (Mojave或更高版本)
+- **Windows**: 10/11 64位系统
+- **BitBrowser**: 必须安装并运行
+- **网络**: 稳定的互联网连接
 
 ## 🚀 快速开始
 
-### 准备工作
-1. **安装比特浏览器**：确保比特浏览器已安装并运行
-2. **启动API服务**：比特浏览器默认API地址为 `http://127.0.0.1:54345`
-3. **创建浏览器窗口**：在比特浏览器中创建并打开浏览器窗口
-4. **登录Vinted**：在浏览器窗口中登录 Vinted.nl 账户
+### 1️⃣ **准备工作**
+```bash
+# 1. 安装BitBrowser并启动
+# 2. 确保API服务运行在 http://127.0.0.1:54345
+# 3. 创建浏览器窗口并登录Vinted.nl账户
+```
 
-### macOS 用户
-1. 双击运行 `VintedInventoryManager.app`
-2. 🔧 **Step 1**: 确认比特浏览器API地址（默认：http://127.0.0.1:54345）
-3. 🔗 **Step 2**: 点击"🧪 测试连接"验证API连接
-4. 🌐 **Step 3**: 选择要使用的浏览器窗口
-5. 📋 **Step 4**: 输入管理员关注列表 URL
-6. 🚀 **Step 5**: 点击"🔍 开始查询"按钮
+### 2️⃣ **启动应用**
+- **macOS**: 双击 `Vinted 库存宝.app`
+- **Windows**: 双击 `Vinted 库存宝.exe`
 
-### Windows 用户
-1. 运行 `VintedInventoryManager.exe`
-2. 按照上述相同步骤操作
+### 3️⃣ **配置监控**
+1. **连接BitBrowser**: 确认API地址并测试连接
+2. **选择浏览器窗口**: 从列表中选择已登录的窗口
+3. **添加管理员账户**: 输入要监控的管理员用户ID
+4. **开始监控**: 点击开始查询，系统将自动循环检查
 
 ## 🔍 工作原理
 
@@ -244,6 +278,140 @@ A:
 
 当前版本：**v1.3.2** - 修正README文档，更新为比特浏览器API的正确描述
 
+## 📞 技术支持
+
+如有问题或建议，请：
+- 查看 [Issues](https://github.com/Suge8/vinted-inventory-manager/issues)
+- 提交新的 Issue 描述问题
+- 查看 [CHANGELOG.md](CHANGELOG.md) 了解更新历史
+
 ## 📄 许可证
 
-本项目仅供内部使用。
+本项目采用 MIT 许可证 - 查看 [LICENSE](LICENSE) 文件了解详情。
+
+---
+
+## 🇺🇸 English
+
+> 🛍️ **Automated Vinted.nl Inventory Monitoring Tool** - Real-time monitoring of employee account inventory status, automatically discover accounts that need restocking
+
+A specialized inventory management tool designed for Vinted.nl that automatically monitors the inventory status of multiple employee accounts through BitBrowser API and promptly identifies accounts that need restocking.
+
+### 🎯 Core Features
+
+#### 📊 **Smart Inventory Monitoring**
+- Automatically detect employee account inventory status
+- Real-time discovery of out-of-stock accounts (need restocking)
+- Support monitoring multiple admin accounts simultaneously
+- 24/7 continuous monitoring mode
+
+#### 🔔 **Instant Alert System**
+- 🎵 Audio alerts: Play notification sound when out-of-stock accounts are found
+- ⚠️ Visual alerts: Orange warning icon flashing
+- 📋 Persistent display: Out-of-stock account list continuously displayed
+- 🔄 Auto-update: Automatically remove from list after restocking
+
+#### 🖥️ **Modern Interface**
+- Simple and intuitive 6-step operation process
+- Real-time progress display and status updates
+- Beautiful HTML format report generation
+- Support for both macOS and Windows platforms
+
+### 📥 Download & Installation
+
+#### 💾 **Direct Download** (Recommended)
+Go to [Releases page](https://github.com/Suge8/vinted-inventory-manager/releases) to download the latest version:
+
+- **macOS**: `Vinted 库存宝.app`
+- **Windows**: `Vinted 库存宝.exe`
+
+> ⚠️ **Important Notice**: Windows version may be flagged by antivirus software, this is normal. Please check the download guide for safe download and usage instructions.
+
+#### 🔧 **System Requirements**
+- **macOS**: 10.14+ (Mojave or higher)
+- **Windows**: 10/11 64-bit system
+- **BitBrowser**: Must be installed and running
+- **Network**: Stable internet connection
+
+### 🚀 Quick Start
+
+#### 1️⃣ **Preparation**
+```bash
+# 1. Install BitBrowser and start it
+# 2. Ensure API service is running on http://127.0.0.1:54345
+# 3. Create browser window and login to Vinted.nl account
+```
+
+#### 2️⃣ **Launch Application**
+- **macOS**: Double-click `Vinted 库存宝.app`
+- **Windows**: Double-click `Vinted 库存宝.exe`
+
+#### 3️⃣ **Configure Monitoring**
+1. **Connect BitBrowser**: Confirm API address and test connection
+2. **Select Browser Window**: Choose logged-in window from the list
+3. **Add Admin Account**: Enter admin user ID to monitor
+4. **Start Monitoring**: Click start query, system will automatically loop check
+
+### 🔍 How It Works
+
+#### 📋 **Monitoring Process**
+The application follows a simple loop:
+1. **Connect** to BitBrowser API
+2. **Fetch** following lists from admin accounts
+3. **Check** each user's inventory status
+4. **Alert** when out-of-stock accounts are found
+5. **Repeat** continuously with configurable intervals
+
+#### 🔧 **Technical Implementation**
+1. **BitBrowser Integration**: Control browser windows through API, avoid anti-crawling detection
+2. **Smart Parsing**: Automatically recognize Vinted page structure, accurately determine inventory status
+3. **Loop Monitoring**: Configurable interval time, continuous monitoring of inventory changes
+4. **Real-time Alerts**: Audio + visual dual alerts, ensure timely discovery of accounts needing restock
+
+### 🎯 Use Cases
+
+#### 👥 **Target Teams**
+- **Vinted Sellers**: Manage multiple employee account inventories
+- **E-commerce Teams**: Real-time monitoring of product inventory status
+- **Operations Staff**: Timely discovery of accounts needing restock
+
+#### 💼 **Typical Workflow**
+1. **Setup Monitoring**: Add admin accounts to monitor
+2. **Start Monitoring**: Program automatically loops to check inventory status
+3. **Receive Alerts**: Immediate notification when out-of-stock accounts are found
+4. **Timely Restock**: Restock relevant accounts based on alerts
+5. **Continuous Monitoring**: 24/7 uninterrupted monitoring, ensure sufficient inventory
+
+### 🛡️ Security & Compliance
+
+#### ✅ **Security Guarantee**
+- **Local Operation**: All data processing is local, no upload to external servers
+- **Open Source**: Complete source code is public, can be audited independently
+- **Privacy Protection**: Only access public information, no collection of sensitive data
+- **Compliant Usage**: Follow website terms of use, reasonable control of access frequency
+
+### 🔧 Tech Stack
+
+| Component | Technology | Purpose |
+|-----------|------------|---------|
+| **Interface** | CustomTkinter | Modern desktop GUI |
+| **Automation** | Selenium WebDriver | Browser control |
+| **Parsing** | BeautifulSoup4 | HTML content parsing |
+| **Network** | Requests | HTTP request handling |
+| **Packaging** | PyInstaller | Generate executable files |
+| **Build** | GitHub Actions | Automated CI/CD |
+
+### 📞 Technical Support
+
+For questions or suggestions, please:
+- Check [Issues](https://github.com/Suge8/vinted-inventory-manager/issues)
+- Submit new Issue describing the problem
+- Check [CHANGELOG.md](CHANGELOG.md) for update history
+
+### 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+---
+
+**⭐ If this project helps you, please give it a Star!**
