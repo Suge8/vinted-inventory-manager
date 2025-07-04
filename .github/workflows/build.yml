@@ -6,6 +6,10 @@ on:
       - 'v*'
   workflow_dispatch:
 
+permissions:
+  contents: write
+  actions: read
+
 jobs:
   build-windows:
     runs-on: windows-latest
@@ -74,44 +78,27 @@ jobs:
         name: vinted-inventory-manager-macos
         path: dist/VintedInventoryManager-macOS.zip
 
-  create-release:
-    needs: [build-windows, build-macos]
-    runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/')
-    steps:
-    - name: Download Windows artifact
-      uses: actions/download-artifact@v4
-      with:
-        name: vinted-inventory-manager-windows
-        path: ./windows
-
-    - name: Download macOS artifact
-      uses: actions/download-artifact@v4
-      with:
-        name: vinted-inventory-manager-macos
-        path: ./macos
-    
-    - name: Create Release
-      uses: softprops/action-gh-release@v1
-      with:
-        files: |
-          windows/VintedInventoryManager.exe
-          macos/VintedInventoryManager-macOS.zip
-        body: |
-          ## Vinted.nl 库存宝 - 跨平台版本
-          
-          ### 📦 下载说明
-          - **Windows用户**: 下载 `VintedInventoryManager.exe`
-          - **macOS用户**: 下载 `VintedInventoryManager.app`
-          
-          ### ✨ 功能特性
-          - 🔄 自动化数据采集
-          - 👥 多账户管理
-          - 📊 智能分类
-          - 🖥️ 现代化界面
-          
-          ### 🔧 系统要求
-          - **Windows**: Windows 10/11 64位 + 比特浏览器
-          - **macOS**: macOS 10.14+ + 比特浏览器
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  # 暂时禁用自动Release，使用Artifacts下载
+  # create-release:
+  #   needs: [build-windows, build-macos]
+  #   runs-on: ubuntu-latest
+  #   if: startsWith(github.ref, 'refs/tags/')
+  #   steps:
+  #   - name: Download Windows artifact
+  #     uses: actions/download-artifact@v4
+  #     with:
+  #       name: vinted-inventory-manager-windows
+  #       path: ./windows
+  #
+  #   - name: Download macOS artifact
+  #     uses: actions/download-artifact@v4
+  #     with:
+  #       name: vinted-inventory-manager-macos
+  #       path: ./macos
+  #
+  #   - name: Create Release
+  #     uses: softprops/action-gh-release@v1
+  #     with:
+  #       files: |
+  #         windows/VintedInventoryManager.exe
+  #         macos/VintedInventoryManager-macOS.zip
