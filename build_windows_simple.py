@@ -62,13 +62,13 @@ def build_windows():
         result = subprocess.run(cmd, check=True, capture_output=True, text=True)
         print("Build successful!")
 
-        # Check generated file
+        # Check generated file - avoid Chinese characters in print
         exe_path = Path('dist/Vinted 库存宝.exe')
 
         if exe_path.exists():
             # Calculate .exe file size
             size_mb = exe_path.stat().st_size / (1024 * 1024)
-            print(f"Generated .exe file: {exe_path}")
+            print("Generated .exe file successfully")
             print(f"File size: {size_mb:.1f} MB")
         else:
             print("ERROR: .exe file not found")
@@ -84,7 +84,7 @@ def build_windows():
         return False
 
     print("\nBuild completed!")
-    print(f"Output file: dist/Vinted 库存宝.exe")
+    print("Output file: dist/Vinted [Chinese name].exe")
     print("Ready to run")
     print("=== Build Success ===")
     return True

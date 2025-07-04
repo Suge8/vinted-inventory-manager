@@ -34,15 +34,15 @@ jobs:
       run: |
         # Check for either Chinese or English name
         if [ -f "dist/Vinted 库存宝.exe" ]; then
-          echo "✅ Windows .exe file created successfully (Chinese name)"
-          ls -la "dist/Vinted 库存宝.exe"
+          echo "Windows .exe file created successfully (Chinese name)"
+          ls -la "dist/"
           echo "exe_file=dist/Vinted 库存宝.exe" >> $GITHUB_ENV
         elif [ -f "dist/VintedInventoryManager.exe" ]; then
-          echo "✅ Windows .exe file created successfully (English name)"
+          echo "Windows .exe file created successfully (English name)"
           ls -la "dist/VintedInventoryManager.exe"
           echo "exe_file=dist/VintedInventoryManager.exe" >> $GITHUB_ENV
         else
-          echo "❌ Windows .exe file not found"
+          echo "Windows .exe file not found"
           ls -la dist/
           exit 1
         fi
@@ -52,9 +52,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: vinted-inventory-manager-windows
-        path: |
-          dist/Vinted 库存宝.exe
-          dist/VintedInventoryManager.exe
+        path: dist/*.exe
 
   build-macos:
     runs-on: macos-latest
@@ -73,7 +71,7 @@ jobs:
         pip install pyinstaller
 
     - name: Build macOS executable
-      run: python build.py
+      run: python build_simple.py
 
     - name: Create macOS app archive
       run: |
