@@ -89,7 +89,7 @@ class VintedInventoryApp:
     def get_version(self) -> str:
         """获取应用程序版本号"""
         # 直接返回当前版本，避免打包后文件路径问题
-        return "2.0.0"
+        return "2.0.1"
     
     def setup_logging(self):
         """设置日志系统"""
@@ -177,9 +177,6 @@ class VintedInventoryApp:
         self.urls_container = ttk.Frame(self.step4_frame)
         self.urls_container.pack(fill=tk.X, pady=(5, 10))
 
-        # 添加第一个URL输入框
-        self.add_url_entry()
-
         # 按钮区域
         button_frame = ttk.Frame(self.step4_frame)
         button_frame.pack(fill=tk.X)
@@ -189,6 +186,9 @@ class VintedInventoryApp:
 
         self.remove_url_button = ttk.Button(button_frame, text="➖ 删除最后一个", command=self.remove_url_entry, state="disabled")
         self.remove_url_button.pack(side=tk.LEFT, padx=(5, 0))
+
+        # 添加第一个URL输入框（在按钮创建之后）
+        self.add_url_entry()
 
         # Step 5: 开始查询
         self.step5_frame = ttk.LabelFrame(parent, text="🚀 Step 5", padding="10")
@@ -870,6 +870,10 @@ class VintedInventoryApp:
 
     def update_url_buttons(self):
         """更新URL按钮状态"""
+        # 检查按钮是否存在（避免初始化时的错误）
+        if not hasattr(self, 'add_url_button') or not hasattr(self, 'remove_url_button'):
+            return
+
         # 添加按钮
         if len(self.url_entries) >= 5:
             self.add_url_button.config(state="disabled")
