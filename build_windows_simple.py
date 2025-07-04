@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Windows构建脚本 - 简化版
+Windows build script - simplified version
 """
 
 import os
@@ -11,35 +11,35 @@ import shutil
 from pathlib import Path
 
 def clean_build_dirs():
-    """清理构建目录"""
+    """Clean build directories"""
     dirs_to_clean = ['build', 'dist']
     for dir_name in dirs_to_clean:
         if os.path.exists(dir_name):
             shutil.rmtree(dir_name)
-            print(f"已清理目录: {dir_name}")
+            print(f"Cleaned directory: {dir_name}")
 
 def build_windows():
-    """构建Windows .exe文件"""
-    print("=== Vinted 库存宝 - Windows构建脚本 ===")
+    """Build Windows .exe file"""
+    print("=== Vinted Inventory Manager - Windows Build Script ===")
 
     clean_build_dirs()
 
-    print("开始构建Windows .exe文件...")
+    print("Starting Windows .exe build...")
 
-    # 确保图标存在
+    # Ensure icon exists
     if not Path('assets/icon.ico').exists():
-        print("⚠️ 图标文件不存在，将使用默认图标")
+        print("Warning: Icon file not found, using default icon")
 
-    # 图标路径
+    # Icon path
     icon_path = Path('assets/icon.ico')
     icon_arg = f'--icon={icon_path}' if icon_path.exists() else ''
 
-    # PyInstaller命令
+    # PyInstaller command
     cmd = [
         'pyinstaller',
         '--onefile',
         '--windowed',
-        '--name=Vinted 库存宝',
+        '--name=Vinted 库存宝',  # Keep Chinese name for the executable
         '--add-data=src;src',
         '--add-data=assets;assets',
         '--hidden-import=tkinter',
@@ -53,39 +53,40 @@ def build_windows():
         'src/main.py'
     ]
 
-    # 添加图标（如果存在）
+    # Add icon if exists
     if icon_arg:
         cmd.insert(-1, icon_arg)
 
     try:
-        print("执行构建命令...")
+        print("Executing build command...")
         result = subprocess.run(cmd, check=True, capture_output=True, text=True)
-        print("✅ 构建成功!")
+        print("Build successful!")
 
-        # 检查生成的文件
+        # Check generated file
         exe_path = Path('dist/Vinted 库存宝.exe')
 
         if exe_path.exists():
-            # 计算.exe文件大小
+            # Calculate .exe file size
             size_mb = exe_path.stat().st_size / (1024 * 1024)
-            print(f"📱 生成的.exe文件: {exe_path}")
-            print(f"📏 文件大小: {size_mb:.1f} MB")
+            print(f"Generated .exe file: {exe_path}")
+            print(f"File size: {size_mb:.1f} MB")
         else:
-            print("❌ 未找到生成的.exe文件")
+            print("ERROR: .exe file not found")
             return False
 
     except subprocess.CalledProcessError as e:
-        print(f"❌ 构建失败: {e}")
-        print("错误输出:", e.stderr)
+        print(f"Build failed: {e}")
+        if e.stderr:
+            print("Error output:", e.stderr)
         return False
     except Exception as e:
-        print(f"❌ 构建过程中出错: {e}")
+        print(f"Build process error: {e}")
         return False
 
-    print("\n🎉 构建完成！")
-    print(f"📁 输出文件: dist/Vinted 库存宝.exe")
-    print("💡 可以直接双击运行")
-    print("=== 构建成功完成 ===")
+    print("\nBuild completed!")
+    print(f"Output file: dist/Vinted 库存宝.exe")
+    print("Ready to run")
+    print("=== Build Success ===")
     return True
 
 if __name__ == "__main__":
