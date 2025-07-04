@@ -6,6 +6,9 @@ lxml>=4.9.0
 
 # GUI 框架
 tkinter-tooltip>=2.0.0
+customtkinter>=5.0.0
+pillow>=9.0.0
+darkdetect>=0.7.0
 
 # 数据处理
 pandas>=2.1.0
@@ -29,3 +32,6 @@ python-dateutil>=2.8.2
 
 # JSON 处理
 jsonschema>=4.19.0
+
+# 报告生成
+pdfkit>=1.0.0

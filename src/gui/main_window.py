@@ -89,7 +89,7 @@ class VintedInventoryApp:
     def get_version(self) -> str:
         """获取应用程序版本号"""
         # 直接返回当前版本，避免打包后文件路径问题
-        return "3.1.2"
+        return "4.0.0"
     
     def setup_logging(self):
         """设置日志系统"""

@@ -48,7 +48,11 @@ def build_executable():
             '--workpath=build',             # 工作目录
             '--specpath=.',                 # spec文件位置
             '--add-data=resources:resources',  # 添加资源文件
+            '--add-data=assets:assets',     # 添加图标资源
             '--hidden-import=tkinter',      # 隐式导入
+            '--hidden-import=customtkinter', # 现代UI库
+            '--hidden-import=darkdetect',   # 主题检测
+            '--hidden-import=PIL',          # 图像处理
             '--hidden-import=selenium',
             '--hidden-import=requests',
             '--hidden-import=beautifulsoup4',
@@ -64,16 +68,28 @@ def build_executable():
             '--workpath=build',             # 工作目录
             '--specpath=.',                 # spec文件位置
             '--add-data=resources:resources',  # 添加资源文件
+            '--add-data=assets:assets',     # 添加图标资源
             '--hidden-import=tkinter',      # 隐式导入
+            '--hidden-import=customtkinter', # 现代UI库
+            '--hidden-import=darkdetect',   # 主题检测
+            '--hidden-import=PIL',          # 图像处理
             '--hidden-import=selenium',
             '--hidden-import=requests',
             '--hidden-import=beautifulsoup4',
             'src/main.py'                   # 主程序文件
         ]
 
-    # 如果有图标文件，添加图标参数
-    if current_os == "Windows":
-        icon_path = Path('resources/app_icon.ico')
+    # 添加图标参数
+    if current_os == "Darwin":  # macOS
+        icon_path = Path('assets/icon.icns')
+        if icon_path.exists():
+            cmd.extend(['--icon', str(icon_path)])
+    elif current_os == "Windows":  # Windows
+        icon_path = Path('assets/icon.ico')
+        if icon_path.exists():
+            cmd.extend(['--icon', str(icon_path)])
+    else:  # Linux
+        icon_path = Path('assets/icon.png')
         if icon_path.exists():
             cmd.extend(['--icon', str(icon_path)])
 
