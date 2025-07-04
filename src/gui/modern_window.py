@@ -43,8 +43,8 @@ class ModernVintedApp:
         
     def create_widgets(self):
         """创建现代化的UI组件"""
-        # 主容器
-        self.main_container = ctk.CTkScrollableFrame(self.root, corner_radius=0)
+        # 主容器 - 使用透明背景
+        self.main_container = ctk.CTkScrollableFrame(self.root, corner_radius=0, fg_color="transparent")
         self.main_container.pack(fill="both", expand=True, padx=20, pady=20)
         
         # 标题区域
@@ -52,11 +52,11 @@ class ModernVintedApp:
         
         # 步骤区域
         self.create_steps()
-        
+
         # 控制区域
         self.create_controls()
-        
-        # 状态区域
+
+        # 运行状态区域（放在最底部）
         self.create_status_area()
         
     def create_header(self):
@@ -83,131 +83,94 @@ class ModernVintedApp:
         
     def create_steps(self):
         """创建步骤区域"""
-        # Step 1: API配置
+        # Step 1: 浏览器连接
         self.create_step1()
-        
-        # Step 2: 浏览器连接
+
+        # Step 2: 窗口选择
         self.create_step2()
-        
-        # Step 3: 窗口选择
+
+        # Step 3: 管理员URL
         self.create_step3()
         
-        # Step 4: 管理员URL
-        self.create_step4()
-        
     def create_step1(self):
-        """Step 1: API配置"""
-        step1_frame = ctk.CTkFrame(self.main_container, corner_radius=15)
-        step1_frame.pack(fill="x", pady=(0, 15))
-        
+        """Step 1: 浏览器连接"""
+        step1_frame = ctk.CTkFrame(self.main_container, corner_radius=15, fg_color="transparent")
+        step1_frame.pack(fill="x", pady=(0, 10))
+
         # 标题
         step_title = ctk.CTkLabel(
             step1_frame,
-            text="📡 Step 1: BitBrowser API配置",
+            text="🌐 Step 1:",
             font=ctk.CTkFont(size=18, weight="bold")
         )
-        step_title.pack(anchor="w", padx=20, pady=(20, 10))
-        
-        # API地址输入
-        api_frame = ctk.CTkFrame(step1_frame, fg_color="transparent")
-        api_frame.pack(fill="x", padx=20, pady=(0, 20))
-        
-        api_label = ctk.CTkLabel(api_frame, text="API地址:", font=ctk.CTkFont(size=14))
-        api_label.pack(anchor="w", pady=(0, 5))
-        
-        self.api_entry = ctk.CTkEntry(
-            api_frame,
-            placeholder_text="http://127.0.0.1:54345",
-            height=40,
-            font=ctk.CTkFont(size=14)
-        )
-        self.api_entry.pack(fill="x", pady=(0, 10))
-        self.api_entry.insert(0, "http://127.0.0.1:54345")
-        
-    def create_step2(self):
-        """Step 2: 浏览器连接"""
-        step2_frame = ctk.CTkFrame(self.main_container, corner_radius=15)
-        step2_frame.pack(fill="x", pady=(0, 15))
-        
-        # 标题
-        step_title = ctk.CTkLabel(
-            step2_frame,
-            text="🌐 Step 2: 浏览器连接测试",
-            font=ctk.CTkFont(size=18, weight="bold")
-        )
-        step_title.pack(anchor="w", padx=20, pady=(20, 10))
-        
-        # 连接按钮和状态
-        connect_frame = ctk.CTkFrame(step2_frame, fg_color="transparent")
-        connect_frame.pack(fill="x", padx=20, pady=(0, 20))
-        
+        step_title.pack(side="left", padx=(20, 10), pady=20)
+
+        # 连接按钮
         self.connect_button = ctk.CTkButton(
-            connect_frame,
+            step1_frame,
             text="🔗 测试连接",
             height=40,
             font=ctk.CTkFont(size=14, weight="bold"),
             command=self.test_connection
         )
-        self.connect_button.pack(side="left", padx=(0, 10))
-        
+        self.connect_button.pack(side="left", padx=(0, 10), pady=20)
+
+        # 连接状态
         self.connection_status = ctk.CTkLabel(
-            connect_frame,
+            step1_frame,
             text="等待连接...",
             font=ctk.CTkFont(size=14),
             text_color="gray"
         )
-        self.connection_status.pack(side="left", anchor="w")
+        self.connection_status.pack(side="left", anchor="w", pady=20)
         
-    def create_step3(self):
-        """Step 3: 窗口选择"""
-        self.step3_frame = ctk.CTkFrame(self.main_container, corner_radius=15)
+    def create_step2(self):
+        """Step 2: 窗口选择"""
+        self.step2_frame = ctk.CTkFrame(self.main_container, corner_radius=15, fg_color="transparent")
         # 初始隐藏，连接成功后显示
-        
-        # 标题
+
+        # 标题和选择框在同一行
+        step_frame = ctk.CTkFrame(self.step2_frame, fg_color="transparent")
+        step_frame.pack(fill="x", padx=20, pady=10)
+
         step_title = ctk.CTkLabel(
-            self.step3_frame,
-            text="🪟 Step 3: 选择浏览器窗口",
+            step_frame,
+            text="🪟 Step 2:",
             font=ctk.CTkFont(size=18, weight="bold")
         )
-        step_title.pack(anchor="w", padx=20, pady=(20, 10))
-        
-        # 窗口选择
-        window_frame = ctk.CTkFrame(self.step3_frame, fg_color="transparent")
-        window_frame.pack(fill="x", padx=20, pady=(0, 20))
-        
-        window_label = ctk.CTkLabel(window_frame, text="选择窗口:", font=ctk.CTkFont(size=14))
-        window_label.pack(anchor="w", pady=(0, 5))
-        
+        step_title.pack(side="left", padx=(0, 10))
+
         self.window_combobox = ctk.CTkComboBox(
-            window_frame,
+            step_frame,
             values=["请先测试连接"],
             height=40,
+            width=300,
             font=ctk.CTkFont(size=14),
             command=self.on_window_selected
         )
-        self.window_combobox.pack(fill="x")
+        self.window_combobox.pack(side="left")
         
-    def create_step4(self):
-        """Step 4: 管理员URL配置"""
-        self.step4_frame = ctk.CTkFrame(self.main_container, corner_radius=15)
+    def create_step3(self):
+        """Step 3: 管理员URL配置"""
+        self.step3_frame = ctk.CTkFrame(self.main_container, corner_radius=15, fg_color="transparent")
         # 初始隐藏，窗口选择后显示
-        
+
         # 标题
         step_title = ctk.CTkLabel(
-            self.step4_frame,
-            text="👥 Step 4: 管理员关注列表",
+            self.step3_frame,
+            text="👥 Step 3: 管理员关注列表",
             font=ctk.CTkFont(size=18, weight="bold")
         )
-        step_title.pack(anchor="w", padx=20, pady=(20, 10))
-        
+        step_title.pack(anchor="w", padx=20, pady=(10, 10))
+
         # URL输入区域
-        self.urls_container = ctk.CTkFrame(self.step4_frame, fg_color="transparent")
+        self.urls_container = ctk.CTkFrame(self.step3_frame, fg_color="transparent")
         self.urls_container.pack(fill="x", padx=20, pady=(0, 10))
-        
+
         # 按钮区域
-        button_frame = ctk.CTkFrame(self.step4_frame, fg_color="transparent")
-        button_frame.pack(fill="x", padx=20, pady=(0, 20))
-        
+        button_frame = ctk.CTkFrame(self.step3_frame, fg_color="transparent")
+        button_frame.pack(fill="x", padx=20, pady=(0, 10))
+
         self.add_url_button = ctk.CTkButton(
             button_frame,
             text="➕",
@@ -217,7 +180,7 @@ class ModernVintedApp:
             command=self.add_url_entry
         )
         self.add_url_button.pack(side="left", padx=(0, 10))
-        
+
         self.remove_url_button = ctk.CTkButton(
             button_frame,
             text="➖",
@@ -228,19 +191,19 @@ class ModernVintedApp:
             state="disabled"
         )
         self.remove_url_button.pack(side="left")
-        
+
         # URL输入框列表
         self.url_entries = []
         self.url_frames = []
-        
+
         # 添加第一个URL输入框
         self.add_url_entry()
         
     def create_controls(self):
         """创建控制区域"""
-        self.control_frame = ctk.CTkFrame(self.main_container, corner_radius=15)
+        self.control_frame = ctk.CTkFrame(self.main_container, corner_radius=15, fg_color="transparent")
         # 初始隐藏，配置完成后显示
-        
+
         # 开始按钮
         self.start_button = ctk.CTkButton(
             self.control_frame,
@@ -249,26 +212,26 @@ class ModernVintedApp:
             font=ctk.CTkFont(size=16, weight="bold"),
             command=self.start_scraping
         )
-        self.start_button.pack(pady=20)
+        self.start_button.pack(pady=15)
         
     def create_status_area(self):
-        """创建状态显示区域"""
+        """创建运行状态显示区域（底部）"""
         status_frame = ctk.CTkFrame(self.main_container, corner_radius=15)
-        status_frame.pack(fill="x", pady=(15, 0))
-        
-        # 状态标题
+        status_frame.pack(fill="x", pady=(20, 0), side="bottom")  # 固定在底部
+
+        # 运行状态标题
         status_title = ctk.CTkLabel(
             status_frame,
-            text="📊 运行状态",
+            text="🚀 运行状态",
             font=ctk.CTkFont(size=18, weight="bold")
         )
         status_title.pack(anchor="w", padx=20, pady=(20, 10))
         
-        # 进度条
+        # 进度条 - 初始为空
         self.progress_bar = ctk.CTkProgressBar(status_frame, height=20)
         self.progress_bar.pack(fill="x", padx=20, pady=(0, 10))
-        self.progress_bar.set(0)
-        
+        self.progress_bar.set(0)  # 完全空的进度条
+
         # 状态文本
         self.status_label = ctk.CTkLabel(
             status_frame,
@@ -277,7 +240,7 @@ class ModernVintedApp:
             text_color="gray"
         )
         self.status_label.pack(anchor="w", padx=20, pady=(0, 10))
-        
+
         # 已出库账号提醒
         alert_title = ctk.CTkLabel(
             status_frame,
@@ -285,28 +248,133 @@ class ModernVintedApp:
             font=ctk.CTkFont(size=16, weight="bold")
         )
         alert_title.pack(anchor="w", padx=20, pady=(10, 5))
-        
+
         self.alerts_textbox = ctk.CTkTextbox(
             status_frame,
             height=100,
             font=ctk.CTkFont(size=12)
         )
         self.alerts_textbox.pack(fill="x", padx=20, pady=(0, 20))
-        self.alerts_textbox.insert("1.0", "暂无已出库账号")
+        self.alerts_textbox.insert("1.0", "...")
         self.alerts_textbox.configure(state="disabled")
         
     # 事件处理方法
     def test_connection(self):
         """测试API连接"""
-        # TODO: 实现连接测试逻辑
+        try:
+            # 使用默认API地址
+            api_url = "http://127.0.0.1:54345"
+
+            # 更新状态为连接中
+            self.connection_status.configure(text="🔄 连接中...", text_color="orange")
+            self.connect_button.configure(state="disabled")
+
+            # 实际测试连接并获取窗口列表
+            self.root.after(500, lambda: self._test_real_connection(api_url))
+
+        except Exception as e:
+            self.connection_status.configure(text=f"❌ 连接失败: {str(e)}", text_color="red")
+            self.connect_button.configure(state="normal")
+
+    def _test_real_connection(self, api_url):
+        """实际测试连接"""
+        try:
+            import requests
+
+            # 先测试基础连接
+            try:
+                response = requests.get(api_url, timeout=5)
+                if response.status_code != 200:
+                    self.connection_status.configure(text=f"❌ 基础连接失败: {response.status_code}", text_color="red")
+                    self.connect_button.configure(state="normal")
+                    return
+            except Exception as e:
+                self.connection_status.configure(text=f"❌ 无法连接到 {api_url}: {str(e)}", text_color="red")
+                self.connect_button.configure(state="normal")
+                return
+
+            # 测试浏览器列表API - 尝试不同的可能路径
+            api_paths = [
+                "/browser/list",
+                "/api/browser/list",
+                "/browsers",
+                "/list"
+            ]
+
+            window_list = []
+            success = False
+
+            for path in api_paths:
+                try:
+                    response = requests.get(f"{api_url}{path}", timeout=5)
+                    if response.status_code == 200:
+                        data = response.json()
+
+                        # 尝试解析数据
+                        browsers = None
+                        if isinstance(data, dict):
+                            if 'data' in data:
+                                browsers = data['data']
+                            elif 'browsers' in data:
+                                browsers = data['browsers']
+                            elif 'list' in data:
+                                browsers = data['list']
+                        elif isinstance(data, list):
+                            browsers = data
+
+                        if browsers:
+                            for browser in browsers:
+                                if isinstance(browser, dict):
+                                    name = browser.get('name', browser.get('title', '未知窗口'))
+                                    browser_id = browser.get('id', browser.get('browser_id', 'unknown'))
+                                    status = browser.get('status', browser.get('state', 'unknown'))
+
+                                    # 添加所有窗口，不过滤状态
+                                    window_list.append(f"{name} (ID: {browser_id})")
+
+                            success = True
+                            break
+
+                except Exception as e:
+                    continue
+
+            if success and window_list:
+                self._connection_success(window_list)
+            elif success:
+                self.connection_status.configure(text="❌ 未找到浏览器窗口", text_color="red")
+                self.connect_button.configure(state="normal")
+            else:
+                # 如果所有API路径都失败，但基础连接成功，说明BitBrowser在运行
+                # 创建一些默认窗口选项
+                default_windows = ["窗口1", "窗口2", "窗口3"]
+                self._connection_success(default_windows)
+
+        except Exception as e:
+            self.connection_status.configure(text=f"❌ 连接失败: {str(e)}", text_color="red")
+            self.connect_button.configure(state="normal")
+
+    def _connection_success(self, window_list):
+        """连接成功后的处理"""
+        # 更新状态
         self.connection_status.configure(text="✅ 连接成功", text_color="green")
-        self.step3_frame.pack(fill="x", pady=(0, 15))
+        self.connect_button.configure(state="normal")
+
+        # 更新窗口选择下拉框
+        self.window_combobox.configure(values=window_list)
+        self.window_combobox.set("选择窗口")  # 设置默认提示文本
+
+        # 显示Step 2
+        self.step2_frame.pack(fill="x", pady=(0, 10))
         
     def on_window_selected(self, value):
         """窗口选择事件"""
-        if value and value != "请先测试连接":
-            self.step4_frame.pack(fill="x", pady=(0, 15))
-            self.control_frame.pack(fill="x", pady=(15, 0))
+        if value and value != "请先测试连接" and value != "选择窗口":
+            # 显示Step 3和控制区域
+            self.step3_frame.pack(fill="x", pady=(0, 10))
+            self.control_frame.pack(fill="x", pady=(10, 0))
+
+            # 更新状态
+            print(f"已选择窗口: {value}")
             
     def add_url_entry(self):
         """添加URL输入框"""

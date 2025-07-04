@@ -34,6 +34,7 @@ class UserInfo:
     username: str
     profile_url: str
     admin_name: str = ""  # 新增：所属管理员名称
+    admin_id: str = ""    # 新增：管理员ID
     status: str = "unknown"  # unknown, has_inventory, no_inventory, error
     item_count: int = 0
     items: List[str] = None
@@ -82,14 +83,16 @@ class VintedScraper:
         # 设置页面加载超时
         self.driver.set_page_load_timeout(self.page_load_timeout)
         
-        # 进度回调函数
+        # 回调函数
         self.progress_callback: Optional[Callable] = None
         self.status_callback: Optional[Callable] = None
+        self.inventory_callback: Optional[Callable] = None
+        self.restocked_callback: Optional[Callable] = None
         
         # 停止标志
         self.should_stop = False
     
-    def set_callbacks(self, progress_callback: Callable = None, status_callback: Callable = None, inventory_callback: Callable = None):
+    def set_callbacks(self, progress_callback: Callable = None, status_callback: Callable = None, inventory_callback: Callable = None, restocked_callback: Callable = None):
         """
         设置回调函数
 
@@ -97,10 +100,12 @@ class VintedScraper:
             progress_callback: 进度回调函数 (current, total, message)
             status_callback: 状态回调函数 (message)
             inventory_callback: 库存提醒回调函数 (username, admin_name)
+            restocked_callback: 补货回调函数 (username, admin_name)
         """
         self.progress_callback = progress_callback
         self.status_callback = status_callback
         self.inventory_callback = inventory_callback
+        self.restocked_callback = restocked_callback
     
     def stop_scraping(self):
         """停止采集"""
@@ -874,9 +879,19 @@ class VintedScraper:
                     # 提取关注用户
                     users = self.extract_following_users(admin_url)
 
-                    # 为每个用户添加管理员信息
+                    # 为每个用户添加管理员信息，并过滤掉管理员自己
+                    admin_id = admin_data.get('user_id', '')  # 获取管理员ID
+                    filtered_users = []
                     for user in users:
-                        user.admin_name = admin_name
+                        # 过滤掉管理员自己（避免检查管理员自己的库存）
+                        if user.user_id != admin_id:
+                            user.admin_name = admin_name
+                            user.admin_id = admin_id
+                            filtered_users.append(user)
+                        else:
+                            self.logger.info(f"过滤掉管理员自己: {user.username} (ID: {user.user_id})")
+
+                    users = filtered_users  # 使用过滤后的用户列表
 
                     all_users.extend(users)
                     admin_summary[admin_name] = {
@@ -912,7 +927,13 @@ class VintedScraper:
                                     # 调用库存提醒回调
                                     if self.inventory_callback:
                                         try:
-                                            self.inventory_callback(updated_user.username, updated_user.admin_name)
+                                            # 传递更多信息：用户名、管理员名、profile_url、管理员ID
+                                            self.inventory_callback(
+                                                updated_user.username,
+                                                updated_user.admin_name,
+                                                updated_user.profile_url,
+                                                updated_user.admin_id
+                                            )
                                         except Exception as e:
                                             self.logger.error(f"库存提醒回调失败: {str(e)}")
                                 else:

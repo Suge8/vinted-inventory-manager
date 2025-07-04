@@ -347,20 +347,58 @@ class BitBrowserManager:
         return self.driver
     
     def cleanup(self):
-        """清理资源"""
+        """清理资源 - 快速清理"""
         try:
+            # 快速关闭WebDriver
             if self.driver:
-                self.driver.quit()
-                self.driver = None
-            
+                try:
+                    # 设置短超时，快速退出
+                    self.driver.set_page_load_timeout(1)
+                    self.driver.quit()
+                except:
+                    # 如果正常退出失败，强制终止
+                    try:
+                        import signal
+                        import psutil
+                        # 尝试强制终止浏览器进程
+                        for proc in psutil.process_iter(['pid', 'name']):
+                            if 'chrome' in proc.info['name'].lower():
+                                proc.terminate()
+                    except:
+                        pass
+                finally:
+                    self.driver = None
+
+            # 快速关闭浏览器窗口
             if self.browser_info:
-                self.api.close_browser(self.browser_info['id'])
-                self.browser_info = None
-                
-            self.logger.info("浏览器资源清理完成")
-            
+                try:
+                    # 使用API对象的close_browser方法
+                    self.logger.info(f"正在关闭浏览器窗口: {self.browser_info['id']}")
+                    self.api.close_browser(self.browser_info['id'])
+                    self.logger.info("浏览器窗口关闭成功")
+                except Exception as e:
+                    self.logger.warning(f"使用API关闭浏览器失败: {e}")
+                    try:
+                        # 备用方法：直接发送HTTP请求
+                        import requests
+                        response = requests.post(
+                            f"{self.api.base_url}/browser/close",
+                            json={"id": self.browser_info['id']},
+                            timeout=3  # 3秒超时
+                        )
+                        self.logger.info(f"HTTP关闭浏览器响应: {response.status_code}")
+                    except Exception as e2:
+                        self.logger.error(f"HTTP关闭浏览器也失败: {e2}")
+                finally:
+                    self.browser_info = None
+
+            self.logger.info("浏览器资源快速清理完成")
+
         except Exception as e:
             self.logger.error(f"清理浏览器资源失败: {str(e)}")
+            # 即使失败也要重置状态
+            self.driver = None
+            self.browser_info = None
     
     def is_ready(self) -> bool:
         """检查浏览器是否就绪"""

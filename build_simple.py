@@ -29,7 +29,15 @@ def build_app():
     clean_directories()
     
     print("开始构建macOS .app文件...")
-    
+
+    # 确保新图标存在
+    if not Path('assets/icon.icns').exists():
+        print("🎨 创建新图标...")
+        try:
+            subprocess.run([sys.executable, 'create_logo_icons.py'], check=True)
+        except subprocess.CalledProcessError:
+            print("⚠️ 创建图标失败")
+
     # 图标路径
     icon_path = Path('assets/icon.icns')
     icon_arg = f'--icon={icon_path}' if icon_path.exists() else ''

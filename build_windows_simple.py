@@ -1,73 +1,93 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """
-Simple Windows build script without Chinese characters
+Windows构建脚本 - 简化版
 """
 
-import subprocess
-import sys
 import os
-import platform
+import sys
+import subprocess
+import shutil
 from pathlib import Path
 
-def main():
-    """Main function"""
-    print("=== Building Windows executable ===")
-    
-    # Check if running on Windows (for GitHub Actions)
-    print(f"Current OS: {platform.system()}")
-    
-    # PyInstaller command for Windows
+def clean_build_dirs():
+    """清理构建目录"""
+    dirs_to_clean = ['build', 'dist']
+    for dir_name in dirs_to_clean:
+        if os.path.exists(dir_name):
+            shutil.rmtree(dir_name)
+            print(f"已清理目录: {dir_name}")
+
+def build_windows():
+    """构建Windows .exe文件"""
+    print("=== Vinted 库存宝 - Windows构建脚本 ===")
+
+    clean_build_dirs()
+
+    print("开始构建Windows .exe文件...")
+
+    # 确保图标存在
+    if not Path('assets/icon.ico').exists():
+        print("⚠️ 图标文件不存在，将使用默认图标")
+
+    # 图标路径
+    icon_path = Path('assets/icon.ico')
+    icon_arg = f'--icon={icon_path}' if icon_path.exists() else ''
+
+    # PyInstaller命令
     cmd = [
         'pyinstaller',
         '--onefile',
         '--windowed',
-        '--name=VintedInventoryManager',
-        '--distpath=dist',
-        '--workpath=build',
-        '--specpath=.',
-        '--add-data=resources;resources',
+        '--name=Vinted 库存宝',
+        '--add-data=src;src',
+        '--add-data=assets;assets',
         '--hidden-import=tkinter',
+        '--hidden-import=customtkinter',
+        '--hidden-import=darkdetect',
+        '--hidden-import=PIL',
         '--hidden-import=selenium',
         '--hidden-import=requests',
         '--hidden-import=beautifulsoup4',
-        '--hidden-import=urllib3',
-        '--hidden-import=certifi',
+        '--hidden-import=lxml',
         'src/main.py'
     ]
-    
-    try:
-        print("Starting build process...")
-        result = subprocess.run(cmd, check=True)
-        print("Build successful!")
-        
-        # Check if exe file was created
-        exe_path = Path('dist/VintedInventoryManager.exe')
-        if exe_path.exists():
-            size_mb = exe_path.stat().st_size / (1024 * 1024)
-            print(f"Generated file: {exe_path}")
-            print(f"File size: {size_mb:.1f} MB")
 
-            # Rename to Chinese name for distribution
-            chinese_name = Path('dist/Vinted 库存宝.exe')
-            try:
-                exe_path.rename(chinese_name)
-                print(f"Renamed to: {chinese_name}")
-                return True
-            except Exception as e:
-                print(f"Warning: Could not rename to Chinese name: {e}")
-                print("Using English name instead")
-                return True
+    # 添加图标（如果存在）
+    if icon_arg:
+        cmd.insert(-1, icon_arg)
+
+    try:
+        print("执行构建命令...")
+        result = subprocess.run(cmd, check=True, capture_output=True, text=True)
+        print("✅ 构建成功!")
+
+        # 检查生成的文件
+        exe_path = Path('dist/Vinted 库存宝.exe')
+
+        if exe_path.exists():
+            # 计算.exe文件大小
+            size_mb = exe_path.stat().st_size / (1024 * 1024)
+            print(f"📱 生成的.exe文件: {exe_path}")
+            print(f"📏 文件大小: {size_mb:.1f} MB")
         else:
-            print("ERROR: .exe file not found")
+            print("❌ 未找到生成的.exe文件")
             return False
-            
+
     except subprocess.CalledProcessError as e:
-        print(f"Build failed with exit code: {e.returncode}")
+        print(f"❌ 构建失败: {e}")
+        print("错误输出:", e.stderr)
         return False
     except Exception as e:
-        print(f"Unexpected error: {e}")
+        print(f"❌ 构建过程中出错: {e}")
         return False
 
+    print("\n🎉 构建完成！")
+    print(f"📁 输出文件: dist/Vinted 库存宝.exe")
+    print("💡 可以直接双击运行")
+    print("=== 构建成功完成 ===")
+    return True
+
 if __name__ == "__main__":
-    success = main()
+    success = build_windows()
     sys.exit(0 if success else 1)
