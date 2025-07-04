@@ -21,7 +21,7 @@ def main():
         'pyinstaller',
         '--onefile',
         '--windowed',
-        '--name=Vinted 库存宝',
+        '--name=VintedInventoryManager',
         '--distpath=dist',
         '--workpath=build',
         '--specpath=.',
@@ -41,12 +41,22 @@ def main():
         print("Build successful!")
         
         # Check if exe file was created
-        exe_path = Path('dist/Vinted 库存宝.exe')
+        exe_path = Path('dist/VintedInventoryManager.exe')
         if exe_path.exists():
             size_mb = exe_path.stat().st_size / (1024 * 1024)
             print(f"Generated file: {exe_path}")
             print(f"File size: {size_mb:.1f} MB")
-            return True
+
+            # Rename to Chinese name for distribution
+            chinese_name = Path('dist/Vinted 库存宝.exe')
+            try:
+                exe_path.rename(chinese_name)
+                print(f"Renamed to: {chinese_name}")
+                return True
+            except Exception as e:
+                print(f"Warning: Could not rename to Chinese name: {e}")
+                print("Using English name instead")
+                return True
         else:
             print("ERROR: .exe file not found")
             return False

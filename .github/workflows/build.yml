@@ -32,9 +32,15 @@ jobs:
 
     - name: Verify Windows executable
       run: |
+        # Check for either Chinese or English name
         if [ -f "dist/Vinted 库存宝.exe" ]; then
-          echo "✅ Windows .exe file created successfully"
+          echo "✅ Windows .exe file created successfully (Chinese name)"
           ls -la "dist/Vinted 库存宝.exe"
+          echo "exe_file=dist/Vinted 库存宝.exe" >> $GITHUB_ENV
+        elif [ -f "dist/VintedInventoryManager.exe" ]; then
+          echo "✅ Windows .exe file created successfully (English name)"
+          ls -la "dist/VintedInventoryManager.exe"
+          echo "exe_file=dist/VintedInventoryManager.exe" >> $GITHUB_ENV
         else
           echo "❌ Windows .exe file not found"
           ls -la dist/
@@ -46,7 +52,9 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: vinted-inventory-manager-windows
-        path: "dist/Vinted 库存宝.exe"
+        path: |
+          dist/Vinted 库存宝.exe
+          dist/VintedInventoryManager.exe
 
   build-macos:
     runs-on: macos-latest
