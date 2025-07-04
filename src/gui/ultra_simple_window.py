@@ -175,7 +175,7 @@ class UltraSimpleVintedApp:
         # 版本号标签 - 放在右下角
         self.version_label = ctk.CTkLabel(
             self.main_frame,
-            text="v4.2.1",
+            text="v4.3.0",
             font=ctk.CTkFont(size=10),
             text_color="gray"
         )
@@ -233,20 +233,29 @@ class UltraSimpleVintedApp:
         )
         title.pack(pady=(0, 10))
 
-        # 窗口选择区域 - 紧凑布局
-        window_frame = ctk.CTkFrame(main_container, fg_color="gray90", corner_radius=8)
-        window_frame.pack(fill="both", expand=True, pady=(0, 10))
+        # 窗口选择区域 - 带滚动条的容器
+        window_container = ctk.CTkFrame(main_container, fg_color="gray90", corner_radius=8)
+        window_container.pack(fill="both", expand=True, pady=(0, 10))
 
-        # 创建复选框列表 - 更紧凑
+        # 创建滚动框架
+        scrollable_frame = ctk.CTkScrollableFrame(
+            window_container,
+            width=580,
+            height=200,  # 限制高度，超出时显示滚动条
+            fg_color="transparent"
+        )
+        scrollable_frame.pack(fill="both", expand=True, padx=10, pady=10)
+
+        # 创建复选框列表 - 在滚动框架内
         self.window_checkboxes = []
         for i, window_display in enumerate(self.window_list):
             checkbox = ctk.CTkCheckBox(
-                window_frame,
+                scrollable_frame,
                 text=window_display,
                 font=ctk.CTkFont(size=11),
                 width=500
             )
-            checkbox.pack(pady=3, anchor="w", padx=15)
+            checkbox.pack(pady=3, anchor="w", padx=5)
             self.window_checkboxes.append(checkbox)
 
         # 间隔时间设置 - 紧凑
@@ -270,9 +279,9 @@ class UltraSimpleVintedApp:
         self.interval_entry.pack(side="left")
         self.interval_entry.insert(0, "5")
 
-        # 按钮区域 - 固定在底部
+        # 按钮区域 - 始终固定在底部，不受滚动影响
         button_frame = ctk.CTkFrame(main_container, fg_color="transparent")
-        button_frame.pack(side="bottom", pady=15)
+        button_frame.pack(side="bottom", fill="x", pady=15)
 
         # 上一步按钮
         back_button = ctk.CTkButton(

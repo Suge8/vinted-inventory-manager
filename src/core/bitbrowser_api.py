@@ -11,12 +11,41 @@ import time
 import logging
 import requests
 from typing import Dict, List, Optional, Tuple
+from functools import wraps
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException, WebDriverException
+
+
+def retry_on_503(max_retries=3, delay=2):
+    """重试装饰器，专门处理503错误"""
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            last_exception = None
+            for attempt in range(max_retries):
+                try:
+                    result = func(*args, **kwargs)
+                    return result
+                except requests.exceptions.HTTPError as e:
+                    if e.response.status_code == 503:
+                        last_exception = e
+                        if attempt < max_retries - 1:
+                            time.sleep(delay * (attempt + 1))  # 递增延迟
+                            continue
+                    raise e
+                except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as e:
+                    last_exception = e
+                    if attempt < max_retries - 1:
+                        time.sleep(delay * (attempt + 1))
+                        continue
+                    raise e
+            raise last_exception
+        return wrapper
+    return decorator
 
 
 class BitBrowserAPI:
@@ -36,6 +65,7 @@ class BitBrowserAPI:
         self.session = requests.Session()
         self.session.timeout = timeout
         
+    @retry_on_503(max_retries=3, delay=2)
     def test_connection(self) -> Tuple[bool, str]:
         """
         测试API连接状态
@@ -49,7 +79,9 @@ class BitBrowserAPI:
                 "page": 0,  # 比特浏览器从0开始计页
                 "pageSize": 10
             }
-            response = self.session.post(f"{self.api_url}/browser/list", json=payload)
+            response = self.session.post(f"{self.api_url}/browser/list", json=payload, timeout=10)
+            response.raise_for_status()  # 抛出HTTP错误
+
             if response.status_code == 200:
                 data = response.json()
                 if data.get('success', False):
@@ -58,13 +90,18 @@ class BitBrowserAPI:
                     return True, f"API连接成功，但返回: {data.get('msg', '未知消息')}"
             else:
                 return False, f"API响应错误: {response.status_code}"
+        except requests.exceptions.HTTPError as e:
+            if e.response.status_code == 503:
+                return False, "BitBrowser服务暂时不可用(503)，请稍后重试"
+            return False, f"API HTTP错误: {e.response.status_code}"
         except requests.exceptions.ConnectionError:
             return False, "无法连接到比特浏览器API，请确保比特浏览器已启动"
         except requests.exceptions.Timeout:
-            return False, "API连接超时"
+            return False, "API连接超时，请检查网络连接"
         except Exception as e:
             return False, f"连接测试失败: {str(e)}"
     
+    @retry_on_503(max_retries=3, delay=2)
     def get_browser_list(self) -> List[Dict]:
         """
         获取浏览器窗口列表
@@ -77,7 +114,8 @@ class BitBrowserAPI:
                 "page": 0,  # 比特浏览器从0开始计页
                 "pageSize": 100  # 获取更多浏览器窗口
             }
-            response = self.session.post(f"{self.api_url}/browser/list", json=payload)
+            response = self.session.post(f"{self.api_url}/browser/list", json=payload, timeout=15)
+            response.raise_for_status()  # 抛出HTTP错误
             response.raise_for_status()
             data = response.json()
             if data.get('success', False):
