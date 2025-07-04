@@ -34,7 +34,7 @@ def build_windows():
     icon_path = Path('assets/icon.ico')
     icon_arg = f'--icon={icon_path}' if icon_path.exists() else ''
 
-    # PyInstaller command with additional metadata to reduce false positives
+    # PyInstaller command - simplified to avoid missing files
     cmd = [
         'pyinstaller',
         '--onefile',
@@ -42,8 +42,6 @@ def build_windows():
         '--name=Vinted 库存宝',  # Keep Chinese name for the executable
         '--add-data=src;src',
         '--add-data=assets;assets',
-        '--add-data=SECURITY.md;.',
-        '--version-file=version_info.txt',  # Add version info
         '--hidden-import=tkinter',
         '--hidden-import=customtkinter',
         '--hidden-import=darkdetect',
@@ -57,6 +55,10 @@ def build_windows():
         '--specpath=.',
         'src/main.py'
     ]
+
+    # Add version file if it exists
+    if Path('version_info.txt').exists():
+        cmd.insert(-1, '--version-file=version_info.txt')
 
     # Add icon if exists
     if icon_arg:
@@ -80,12 +82,13 @@ def build_windows():
             return False
 
     except subprocess.CalledProcessError as e:
-        print(f"Build failed: {e}")
+        print("Build failed with PyInstaller error")
         if e.stderr:
-            print("Error output:", e.stderr)
+            # Avoid printing stderr that might contain Chinese characters
+            print("Error occurred during build process")
         return False
     except Exception as e:
-        print(f"Build process error: {e}")
+        print("Build process error occurred")
         return False
 
     print("\nBuild completed!")

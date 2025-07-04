@@ -33,9 +33,9 @@
 - 🔄 自动更新：补货后自动从列表移除
 
 ### 🖥️ **现代化界面**
-- 简洁直观的6步操作流程
+- 简洁直观的操作流程，按提示操作即可
 - 实时进度显示和状态更新
-- 美观的HTML格式报告生成
+- 支持多窗口轮询监控，可设置间隔时间
 - 支持macOS和Windows双平台
 
 ## 📥 下载安装
@@ -45,8 +45,6 @@
 
 - **macOS**: `Vinted 库存宝.app`
 - **Windows**: `Vinted 库存宝.exe`
-
-> ⚠️ **重要提醒**: Windows版本可能被杀毒软件误报，这是正常现象。请查看 [下载指南](DOWNLOAD_GUIDE.md) 了解如何安全下载和使用。
 
 ### 🔧 **系统要求**
 - **macOS**: 10.14+ (Mojave或更高版本)
@@ -59,7 +57,7 @@
 ### 1️⃣ **准备工作**
 ```bash
 # 1. 安装BitBrowser并启动
-# 2. 确保API服务运行在 http://127.0.0.1:54345
+# 2. API服务会自动运行在 http://127.0.0.1:54345
 # 3. 创建浏览器窗口并登录Vinted.nl账户
 ```
 
@@ -67,11 +65,11 @@
 - **macOS**: 双击 `Vinted 库存宝.app`
 - **Windows**: 双击 `Vinted 库存宝.exe`
 
-### 3️⃣ **配置监控**
-1. **连接BitBrowser**: 确认API地址并测试连接
-2. **选择浏览器窗口**: 从列表中选择已登录的窗口
-3. **添加管理员账户**: 输入要监控的管理员用户ID
-4. **开始监控**: 点击开始查询，系统将自动循环检查
+### 3️⃣ **开始监控**
+1. **选择浏览器窗口**: 从列表中选择已登录的窗口
+2. **添加管理员账户**: 输入要监控的管理员用户ID
+3. **设置监控参数**: 可配置循环间隔时间
+4. **开始监控**: 按界面提示操作，系统将自动循环检查
 
 ## 🔍 工作原理
 
@@ -325,8 +323,6 @@ Go to [Releases page](https://github.com/Suge8/vinted-inventory-manager/releases
 - **macOS**: `Vinted 库存宝.app`
 - **Windows**: `Vinted 库存宝.exe`
 
-> ⚠️ **Important Notice**: Windows version may be flagged by antivirus software, this is normal. Please check the download guide for safe download and usage instructions.
-
 #### 🔧 **System Requirements**
 - **macOS**: 10.14+ (Mojave or higher)
 - **Windows**: 10/11 64-bit system
@@ -338,7 +334,7 @@ Go to [Releases page](https://github.com/Suge8/vinted-inventory-manager/releases
 #### 1️⃣ **Preparation**
 ```bash
 # 1. Install BitBrowser and start it
-# 2. Ensure API service is running on http://127.0.0.1:54345
+# 2. API service runs automatically on http://127.0.0.1:54345
 # 3. Create browser window and login to Vinted.nl account
 ```
 
@@ -346,11 +342,11 @@ Go to [Releases page](https://github.com/Suge8/vinted-inventory-manager/releases
 - **macOS**: Double-click `Vinted 库存宝.app`
 - **Windows**: Double-click `Vinted 库存宝.exe`
 
-#### 3️⃣ **Configure Monitoring**
-1. **Connect BitBrowser**: Confirm API address and test connection
-2. **Select Browser Window**: Choose logged-in window from the list
-3. **Add Admin Account**: Enter admin user ID to monitor
-4. **Start Monitoring**: Click start query, system will automatically loop check
+#### 3️⃣ **Start Monitoring**
+1. **Select Browser Window**: Choose logged-in window from the list
+2. **Add Admin Account**: Enter admin user ID to monitor
+3. **Configure Parameters**: Set monitoring interval time
+4. **Start Monitoring**: Follow interface prompts, system will automatically loop check
 
 ### 🔍 How It Works
 
