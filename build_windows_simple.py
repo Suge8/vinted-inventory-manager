@@ -34,7 +34,7 @@ def build_windows():
     icon_path = Path('assets/icon.ico')
     icon_arg = f'--icon={icon_path}' if icon_path.exists() else ''
 
-    # PyInstaller command
+    # PyInstaller command with additional metadata to reduce false positives
     cmd = [
         'pyinstaller',
         '--onefile',
@@ -42,6 +42,8 @@ def build_windows():
         '--name=Vinted 库存宝',  # Keep Chinese name for the executable
         '--add-data=src;src',
         '--add-data=assets;assets',
+        '--add-data=SECURITY.md;.',
+        '--version-file=version_info.txt',  # Add version info
         '--hidden-import=tkinter',
         '--hidden-import=customtkinter',
         '--hidden-import=darkdetect',
@@ -50,6 +52,9 @@ def build_windows():
         '--hidden-import=requests',
         '--hidden-import=beautifulsoup4',
         '--hidden-import=lxml',
+        '--distpath=dist',
+        '--workpath=build',
+        '--specpath=.',
         'src/main.py'
     ]
 
