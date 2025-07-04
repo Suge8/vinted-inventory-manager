@@ -239,9 +239,12 @@ class DataProcessor:
         if not ensure_directory_exists(str(output_dir)):
             raise Exception(f"无法创建输出目录: {output_dir}")
         
-        # 生成文件名
-        filename_template = self.output_config.get('filename_template', 'vinted_inventory_report_{timestamp}.txt')
-        filename = generate_timestamp_filename(filename_template)
+        # 生成文件名：Vinted库存报告_7.4-23:47
+        from datetime import datetime
+        now = datetime.now()
+        date_str = now.strftime("%m.%d")  # 7.4 格式
+        time_str = now.strftime("%H:%M")  # 23:47 格式
+        filename = f"Vinted库存报告_{date_str}-{time_str}.txt"
         filename = safe_filename(filename)
         
         # 完整文件路径

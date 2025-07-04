@@ -853,9 +853,14 @@ class VintedScraper:
         admin_summary = {}
 
         try:
-            # 第一阶段：提取所有管理员的关注列表
-            self._update_status(f"开始提取 {len(admin_urls)} 个管理员的关注列表...")
+            # 简单流程：边提取边检查，单线程顺序处理
+            self._update_status(f"开始处理 {len(admin_urls)} 个管理员的关注列表...")
 
+            users_with_inventory = []
+            users_without_inventory = []
+            users_with_errors = []
+
+            # 为每个管理员提取关注列表并立即检查库存
             for i, admin_data in enumerate(admin_urls):
                 if self.should_stop:
                     raise Exception("用户取消操作")
@@ -863,10 +868,10 @@ class VintedScraper:
                 admin_name = admin_data['admin_name']
                 admin_url = admin_data['url']
 
-                self._update_status(f"正在提取 {admin_name} 的关注列表...")
-                self._update_progress(i + 1, len(admin_urls), f"提取 {admin_name} 关注列表")
+                self._update_status(f"正在处理 {admin_name} 的关注列表...")
 
                 try:
+                    # 提取关注用户
                     users = self.extract_following_users(admin_url)
 
                     # 为每个用户添加管理员信息
@@ -882,8 +887,50 @@ class VintedScraper:
 
                     self.logger.info(f"{admin_name} 关注了 {len(users)} 个用户")
 
+                    # 立即检查这些用户的库存（单线程顺序处理）
+                    if users:
+                        self._update_status(f"开始检查 {admin_name} 的 {len(users)} 个用户库存...")
+
+                        for j, user in enumerate(users):
+                            if self.should_stop:
+                                break
+
+                            self._update_progress(j + 1, len(users), f"检查 {admin_name} 的用户: {user.username}")
+
+                            try:
+                                # 使用原有的库存检查方法
+                                updated_user = self.check_user_inventory(user)
+
+                                if updated_user.status == "has_inventory":
+                                    users_with_inventory.append(updated_user)
+                                elif updated_user.status == "no_inventory":
+                                    users_without_inventory.append(updated_user)
+                                    # 无库存 = 已出库，发出声音提醒
+                                    self._play_notification_sound()
+                                    self._update_status(f"🔔 发现已出库账号: {updated_user.username} ({updated_user.admin_name})")
+
+                                    # 调用库存提醒回调
+                                    if self.inventory_callback:
+                                        try:
+                                            self.inventory_callback(updated_user.username, updated_user.admin_name)
+                                        except Exception as e:
+                                            self.logger.error(f"库存提醒回调失败: {str(e)}")
+                                else:
+                                    users_with_errors.append(updated_user)
+
+                                # 添加延迟避免请求过快
+                                delay = self.config.get('delay_between_requests', 1)
+                                if delay > 0:
+                                    time.sleep(delay)
+
+                            except Exception as e:
+                                self.logger.error(f"检查用户 {user.username} 失败: {str(e)}")
+                                user.status = "error"
+                                user.error_message = str(e)
+                                users_with_errors.append(user)
+
                 except Exception as e:
-                    self.logger.error(f"提取 {admin_name} 关注列表失败: {str(e)}")
+                    self.logger.error(f"处理 {admin_name} 失败: {str(e)}")
                     admin_summary[admin_name] = {
                         'url': admin_url,
                         'following_count': 0,
@@ -893,52 +940,6 @@ class VintedScraper:
 
             if not all_users:
                 raise Exception("未找到任何关注用户")
-
-            # 第二阶段：检查所有用户的库存
-            self._update_status(f"开始检查 {len(all_users)} 个用户的库存状态...")
-
-            users_with_inventory = []
-            users_without_inventory = []
-            users_with_errors = []
-
-            for i, user in enumerate(all_users):
-                if self.should_stop:
-                    self.logger.info("用户请求停止采集")
-                    break
-
-                self._update_progress(i + 1, len(all_users), f"检查 {user.admin_name} 的用户: {user.username}")
-
-                try:
-                    updated_user = self.check_user_inventory(user)
-
-                    if updated_user.status == "has_inventory":
-                        users_with_inventory.append(updated_user)
-                        # 发出声音提醒（需求3）
-                        self._play_notification_sound()
-                        self._update_status(f"🔔 发现已出库账号: {user.username} ({user.admin_name})")
-
-                        # 调用库存提醒回调
-                        if self.inventory_callback:
-                            try:
-                                self.inventory_callback(user.username, user.admin_name)
-                            except Exception as e:
-                                self.logger.error(f"库存提醒回调失败: {str(e)}")
-
-                    elif updated_user.status == "no_inventory":
-                        users_without_inventory.append(updated_user)
-                    else:
-                        users_with_errors.append(updated_user)
-
-                    # 添加延迟避免请求过快
-                    delay = self.config.get('delay_between_requests', 1)
-                    if delay > 0:
-                        time.sleep(delay)
-
-                except Exception as e:
-                    self.logger.error(f"检查用户 {user.username} 失败: {str(e)}")
-                    user.status = "error"
-                    user.error_message = str(e)
-                    users_with_errors.append(user)
 
             # 创建结果对象
             scraping_time = time.time() - start_time
@@ -964,20 +965,38 @@ class VintedScraper:
             self.logger.error(f"多管理员采集过程失败: {str(e)}")
             raise
 
+
+
+
+
+
+
     def _play_notification_sound(self):
-        """播放通知声音"""
+        """播放通知声音 - 增强版本，更大声更明显"""
         try:
             import platform
             import subprocess
 
             system = platform.system()
             if system == "Darwin":  # macOS
-                subprocess.run(["afplay", "/System/Library/Sounds/Glass.aiff"], check=False)
+                # 播放多次，更明显
+                for _ in range(3):
+                    subprocess.run(["afplay", "/System/Library/Sounds/Sosumi.aiff"], check=False)
+                    import time
+                    time.sleep(0.1)
             elif system == "Windows":
                 import winsound
-                winsound.Beep(1000, 500)  # 频率1000Hz，持续500ms
+                # 播放多次，更大声
+                for _ in range(3):
+                    winsound.Beep(1500, 300)  # 更高频率1500Hz，短促300ms
+                    import time
+                    time.sleep(0.1)
             elif system == "Linux":
-                subprocess.run(["paplay", "/usr/share/sounds/alsa/Front_Left.wav"], check=False)
+                # 播放多次
+                for _ in range(3):
+                    subprocess.run(["paplay", "/usr/share/sounds/alsa/Front_Left.wav"], check=False)
+                    import time
+                    time.sleep(0.1)
         except Exception as e:
             self.logger.debug(f"播放通知声音失败: {str(e)}")
             # 声音播放失败不影响主要功能，只记录调试日志

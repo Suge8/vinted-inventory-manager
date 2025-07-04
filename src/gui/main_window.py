@@ -89,7 +89,7 @@ class VintedInventoryApp:
     def get_version(self) -> str:
         """获取应用程序版本号"""
         # 直接返回当前版本，避免打包后文件路径问题
-        return "2.0.1"
+        return "3.1.2"
     
     def setup_logging(self):
         """设置日志系统"""
@@ -99,13 +99,69 @@ class VintedInventoryApp:
         self.logger = setup_gui_logger(log_callback)
     
     def create_widgets(self):
-        """创建步骤式UI组件 - 使用简单直接布局，不使用滚动"""
-        # 创建主框架，直接在root上布局
-        self.main_frame = ttk.Frame(self.root, padding="15")
+        """创建步骤式UI组件 - 优化滚动体验"""
+        # 创建外层容器
+        container = ttk.Frame(self.root)
+        container.pack(fill=tk.BOTH, expand=True)
+
+        # 创建画布和滚动条
+        self.canvas = tk.Canvas(container, highlightthickness=0)
+        self.v_scrollbar = ttk.Scrollbar(container, orient="vertical", command=self.canvas.yview)
+
+        # 创建可滚动的内容框架
+        self.scrollable_frame = ttk.Frame(self.canvas)
+
+        # 配置滚动区域
+        def configure_scroll_region(event=None):
+            self.canvas.configure(scrollregion=self.canvas.bbox("all"))
+
+        def configure_canvas_width(event):
+            # 让内容框架的宽度跟随画布宽度
+            canvas_width = event.width
+            self.canvas.itemconfig(self.canvas_window, width=canvas_width)
+
+        self.scrollable_frame.bind("<Configure>", configure_scroll_region)
+        self.canvas.bind("<Configure>", configure_canvas_width)
+
+        # 创建窗口对象
+        self.canvas_window = self.canvas.create_window((0, 0), window=self.scrollable_frame, anchor="nw")
+        self.canvas.configure(yscrollcommand=self.v_scrollbar.set)
+
+        # 布局
+        self.canvas.pack(side="left", fill="both", expand=True)
+        self.v_scrollbar.pack(side="right", fill="y")
+
+        # 创建主框架
+        self.main_frame = ttk.Frame(self.scrollable_frame, padding="15")
         self.main_frame.pack(fill=tk.BOTH, expand=True)
+
+        # 绑定鼠标滚轮
+        self.bind_mousewheel_events()
 
         # 创建步骤界面
         self.create_step_interface(self.main_frame)
+
+    def bind_mousewheel_events(self):
+        """绑定鼠标滚轮事件 - 优化版本"""
+        def on_mousewheel(event):
+            # 更平滑的滚动
+            self.canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
+
+        def bind_mousewheel(event):
+            self.canvas.bind_all("<MouseWheel>", on_mousewheel)
+            # macOS支持
+            self.canvas.bind_all("<Button-4>", lambda e: self.canvas.yview_scroll(-1, "units"))
+            self.canvas.bind_all("<Button-5>", lambda e: self.canvas.yview_scroll(1, "units"))
+
+        def unbind_mousewheel(event):
+            self.canvas.unbind_all("<MouseWheel>")
+            self.canvas.unbind_all("<Button-4>")
+            self.canvas.unbind_all("<Button-5>")
+
+        # 绑定到整个窗口
+        self.root.bind("<Enter>", bind_mousewheel)
+        self.root.bind("<Leave>", unbind_mousewheel)
+        bind_mousewheel(None)  # 立即绑定
 
     def create_step_interface(self, parent):
         """创建步骤式界面"""
@@ -165,7 +221,7 @@ class VintedInventoryApp:
         title_frame = ttk.Frame(self.step4_frame)
         title_frame.pack(fill=tk.X, pady=(0, 5))
 
-        ttk.Label(title_frame, text="管理员关注列表 URL (最多5个)：").pack(side=tk.LEFT)
+        ttk.Label(title_frame, text="管理员关注列表 URL：").pack(side=tk.LEFT)
         ttk.Label(title_frame, text="支持多个管理员账号", font=("Arial", 8), foreground="gray").pack(side=tk.RIGHT)
 
         # 存储URL输入框的列表
@@ -181,10 +237,10 @@ class VintedInventoryApp:
         button_frame = ttk.Frame(self.step4_frame)
         button_frame.pack(fill=tk.X)
 
-        self.add_url_button = ttk.Button(button_frame, text="➕ 添加管理员", command=self.add_url_entry)
+        self.add_url_button = ttk.Button(button_frame, text="➕", command=self.add_url_entry)
         self.add_url_button.pack(side=tk.LEFT)
 
-        self.remove_url_button = ttk.Button(button_frame, text="➖ 删除最后一个", command=self.remove_url_entry, state="disabled")
+        self.remove_url_button = ttk.Button(button_frame, text="➖", command=self.remove_url_entry, state="disabled")
         self.remove_url_button.pack(side=tk.LEFT, padx=(5, 0))
 
         # 添加第一个URL输入框（在按钮创建之后）
@@ -215,14 +271,14 @@ class VintedInventoryApp:
         self.progress_label.pack(anchor=tk.W, pady=(2, 0))
 
         # 已出库账号提醒区域
-        self.inventory_alert_frame = ttk.LabelFrame(self.step5_frame, text="🔔 已出库账号提醒", padding="5")
+        self.inventory_alert_frame = ttk.LabelFrame(self.step5_frame, text="🔔 已出库账号", padding="5")
         self.inventory_alert_frame.pack(fill=tk.X, pady=(10, 0))
 
         # 已出库账号列表
         self.inventory_alerts_text = tk.Text(self.inventory_alert_frame, height=3, wrap=tk.WORD,
                                            font=("Arial", 9), bg="#fff3cd", fg="#856404")
         self.inventory_alerts_text.pack(fill=tk.X)
-        self.inventory_alerts_text.insert(tk.END, "等待开始查询...")
+        self.inventory_alerts_text.insert(tk.END, "暂无已出库账号")
         self.inventory_alerts_text.config(state=tk.DISABLED)
 
         # Step 6: 查询结果 (初始隐藏)
@@ -247,9 +303,6 @@ class VintedInventoryApp:
 
         # 监听窗口选择变化
         self.window_var.trace('w', self.on_window_selection_change)
-
-        # 监听URL变化
-        self.following_url_var.trace('w', self.on_url_change)
 
     def create_bottom_log_area(self, parent):
         """创建底部的可折叠日志区域"""
@@ -334,15 +387,14 @@ class VintedInventoryApp:
 
     def check_can_start_query(self):
         """检查是否可以开始查询"""
+        # 检查必要的UI组件是否存在（避免初始化时的错误）
+        if not hasattr(self, 'start_button') or not hasattr(self, 'query_status'):
+            return
+
         window_selected = bool(self.window_var.get())
 
         # 检查是否有有效的管理员URL
         admin_urls = self.get_admin_urls() if hasattr(self, 'url_vars') else []
-        # 兼容旧的单URL系统
-        if not admin_urls and hasattr(self, 'following_url_var'):
-            url = self.following_url_var.get().strip()
-            if url:
-                admin_urls = [{'admin_name': '管理员1', 'url': url}]
 
         if window_selected and len(admin_urls) > 0:
             self.start_button.config(state="normal")
@@ -426,7 +478,11 @@ class VintedInventoryApp:
 
             # 设置UI配置
             self.api_url_var.set(saved_config.get('bitbrowser', {}).get('api_url', 'http://127.0.0.1:54345'))
-            self.following_url_var.set(saved_config.get('last_following_url', ''))
+
+            # 加载保存的URL到第一个输入框（兼容旧配置）
+            last_url = saved_config.get('last_following_url', '')
+            if last_url and hasattr(self, 'url_vars') and len(self.url_vars) > 0:
+                self.url_vars[0].set(last_url)
 
             # 如果有保存的窗口选择，尝试恢复
             window_selection = saved_config.get('bitbrowser', {}).get('window_selection', '')
@@ -445,7 +501,12 @@ class VintedInventoryApp:
             self.config['bitbrowser']['api_url'] = self.api_url_var.get().strip()
             self.config['bitbrowser']['window_id'] = self.get_selected_window_id()
             self.config['bitbrowser']['window_selection'] = self.window_var.get()
-            self.config['last_following_url'] = self.following_url_var.get().strip()
+
+            # 保存第一个URL（兼容旧配置）
+            if hasattr(self, 'url_vars') and len(self.url_vars) > 0:
+                self.config['last_following_url'] = self.url_vars[0].get().strip()
+            else:
+                self.config['last_following_url'] = ''
 
             # 保存到文件
             self.config_manager.save_config(self.config)
@@ -525,11 +586,6 @@ class VintedInventoryApp:
 
             # 获取管理员URL列表
             admin_urls = self.get_admin_urls() if hasattr(self, 'url_vars') else []
-            # 兼容旧的单URL系统
-            if not admin_urls and hasattr(self, 'following_url_var'):
-                url = self.following_url_var.get().strip()
-                if url:
-                    admin_urls = [{'admin_name': '管理员1', 'url': url}]
 
             if not api_url:
                 self.query_status.config(text="请输入API地址", foreground="red")
@@ -904,7 +960,7 @@ class VintedInventoryApp:
             self.inventory_alerts_text.config(state=tk.NORMAL)
 
             # 如果是第一个提醒，清空初始文本
-            if "等待开始查询..." in self.inventory_alerts_text.get("1.0", tk.END):
+            if "暂无已出库账号" in self.inventory_alerts_text.get("1.0", tk.END):
                 self.inventory_alerts_text.delete("1.0", tk.END)
 
             # 添加新的提醒
@@ -927,7 +983,7 @@ class VintedInventoryApp:
         try:
             self.inventory_alerts_text.config(state=tk.NORMAL)
             self.inventory_alerts_text.delete("1.0", tk.END)
-            self.inventory_alerts_text.insert(tk.END, "等待开始查询...")
+            self.inventory_alerts_text.insert(tk.END, "暂无已出库账号")
             self.inventory_alerts_text.config(state=tk.DISABLED)
         except Exception as e:
             self.logger.error(f"清空库存提醒失败: {str(e)}")
