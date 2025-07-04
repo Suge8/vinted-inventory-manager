@@ -31,11 +31,11 @@ def build_executable():
 
     # 根据操作系统确定可执行文件名
     if current_os == "Windows":
-        exe_name = "VintedInventoryManager.exe"
+        exe_name = "Vinted 库存宝.exe"
     elif current_os == "Darwin":  # macOS
-        exe_name = "VintedInventoryManager"
+        exe_name = "Vinted 库存宝"
     else:  # Linux
-        exe_name = "VintedInventoryManager"
+        exe_name = "Vinted 库存宝"
 
     # PyInstaller 命令参数
     if current_os == "Darwin":  # macOS - 只生成.app包

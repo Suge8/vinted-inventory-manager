@@ -33,11 +33,12 @@ class UserInfo:
     user_id: str
     username: str
     profile_url: str
+    admin_name: str = ""  # 新增：所属管理员名称
     status: str = "unknown"  # unknown, has_inventory, no_inventory, error
     item_count: int = 0
     items: List[str] = None
     error_message: str = ""
-    
+
     def __post_init__(self):
         if self.items is None:
             self.items = []
@@ -46,13 +47,18 @@ class UserInfo:
 @dataclass
 class ScrapingResult:
     """采集结果数据类"""
-    admin_url: str
+    admin_urls: List[Dict]  # 修改：支持多个管理员URL
     total_users: int
     users_with_inventory: List[UserInfo]
     users_without_inventory: List[UserInfo]
     users_with_errors: List[UserInfo]
     scraping_time: float
     timestamp: str
+    admin_summary: Dict = None  # 新增：每个管理员的统计信息
+
+    def __post_init__(self):
+        if self.admin_summary is None:
+            self.admin_summary = {}
 
 
 class VintedScraper:
@@ -83,16 +89,18 @@ class VintedScraper:
         # 停止标志
         self.should_stop = False
     
-    def set_callbacks(self, progress_callback: Callable = None, status_callback: Callable = None):
+    def set_callbacks(self, progress_callback: Callable = None, status_callback: Callable = None, inventory_callback: Callable = None):
         """
         设置回调函数
-        
+
         Args:
             progress_callback: 进度回调函数 (current, total, message)
             status_callback: 状态回调函数 (message)
+            inventory_callback: 库存提醒回调函数 (username, admin_name)
         """
         self.progress_callback = progress_callback
         self.status_callback = status_callback
+        self.inventory_callback = inventory_callback
     
     def stop_scraping(self):
         """停止采集"""
@@ -810,7 +818,7 @@ class VintedScraper:
             timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
 
             result = ScrapingResult(
-                admin_url=following_url,
+                admin_urls=[{'admin_name': '管理员1', 'url': following_url}],  # 兼容旧版本
                 total_users=len(users),
                 users_with_inventory=users_with_inventory,
                 users_without_inventory=users_without_inventory,
@@ -827,3 +835,149 @@ class VintedScraper:
         except Exception as e:
             self.logger.error(f"采集过程失败: {str(e)}")
             raise
+
+    def scrape_multiple_admins(self, admin_urls: List[Dict]) -> ScrapingResult:
+        """
+        采集多个管理员的关注列表和库存信息
+
+        Args:
+            admin_urls: 管理员URL列表，格式：[{'admin_name': '管理员1', 'url': 'xxx'}, ...]
+
+        Returns:
+            采集结果
+        """
+        start_time = time.time()
+        self.should_stop = False
+
+        all_users = []
+        admin_summary = {}
+
+        try:
+            # 第一阶段：提取所有管理员的关注列表
+            self._update_status(f"开始提取 {len(admin_urls)} 个管理员的关注列表...")
+
+            for i, admin_data in enumerate(admin_urls):
+                if self.should_stop:
+                    raise Exception("用户取消操作")
+
+                admin_name = admin_data['admin_name']
+                admin_url = admin_data['url']
+
+                self._update_status(f"正在提取 {admin_name} 的关注列表...")
+                self._update_progress(i + 1, len(admin_urls), f"提取 {admin_name} 关注列表")
+
+                try:
+                    users = self.extract_following_users(admin_url)
+
+                    # 为每个用户添加管理员信息
+                    for user in users:
+                        user.admin_name = admin_name
+
+                    all_users.extend(users)
+                    admin_summary[admin_name] = {
+                        'url': admin_url,
+                        'following_count': len(users),
+                        'users': users
+                    }
+
+                    self.logger.info(f"{admin_name} 关注了 {len(users)} 个用户")
+
+                except Exception as e:
+                    self.logger.error(f"提取 {admin_name} 关注列表失败: {str(e)}")
+                    admin_summary[admin_name] = {
+                        'url': admin_url,
+                        'following_count': 0,
+                        'error': str(e),
+                        'users': []
+                    }
+
+            if not all_users:
+                raise Exception("未找到任何关注用户")
+
+            # 第二阶段：检查所有用户的库存
+            self._update_status(f"开始检查 {len(all_users)} 个用户的库存状态...")
+
+            users_with_inventory = []
+            users_without_inventory = []
+            users_with_errors = []
+
+            for i, user in enumerate(all_users):
+                if self.should_stop:
+                    self.logger.info("用户请求停止采集")
+                    break
+
+                self._update_progress(i + 1, len(all_users), f"检查 {user.admin_name} 的用户: {user.username}")
+
+                try:
+                    updated_user = self.check_user_inventory(user)
+
+                    if updated_user.status == "has_inventory":
+                        users_with_inventory.append(updated_user)
+                        # 发出声音提醒（需求3）
+                        self._play_notification_sound()
+                        self._update_status(f"🔔 发现已出库账号: {user.username} ({user.admin_name})")
+
+                        # 调用库存提醒回调
+                        if self.inventory_callback:
+                            try:
+                                self.inventory_callback(user.username, user.admin_name)
+                            except Exception as e:
+                                self.logger.error(f"库存提醒回调失败: {str(e)}")
+
+                    elif updated_user.status == "no_inventory":
+                        users_without_inventory.append(updated_user)
+                    else:
+                        users_with_errors.append(updated_user)
+
+                    # 添加延迟避免请求过快
+                    delay = self.config.get('delay_between_requests', 1)
+                    if delay > 0:
+                        time.sleep(delay)
+
+                except Exception as e:
+                    self.logger.error(f"检查用户 {user.username} 失败: {str(e)}")
+                    user.status = "error"
+                    user.error_message = str(e)
+                    users_with_errors.append(user)
+
+            # 创建结果对象
+            scraping_time = time.time() - start_time
+            timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
+
+            result = ScrapingResult(
+                admin_urls=admin_urls,
+                total_users=len(all_users),
+                users_with_inventory=users_with_inventory,
+                users_without_inventory=users_without_inventory,
+                users_with_errors=users_with_errors,
+                scraping_time=scraping_time,
+                timestamp=timestamp,
+                admin_summary=admin_summary
+            )
+
+            self._update_status(f"采集完成！耗时 {scraping_time:.1f} 秒")
+            self._update_progress(len(all_users), len(all_users), "采集完成")
+
+            return result
+
+        except Exception as e:
+            self.logger.error(f"多管理员采集过程失败: {str(e)}")
+            raise
+
+    def _play_notification_sound(self):
+        """播放通知声音"""
+        try:
+            import platform
+            import subprocess
+
+            system = platform.system()
+            if system == "Darwin":  # macOS
+                subprocess.run(["afplay", "/System/Library/Sounds/Glass.aiff"], check=False)
+            elif system == "Windows":
+                import winsound
+                winsound.Beep(1000, 500)  # 频率1000Hz，持续500ms
+            elif system == "Linux":
+                subprocess.run(["paplay", "/usr/share/sounds/alsa/Front_Left.wav"], check=False)
+        except Exception as e:
+            self.logger.debug(f"播放通知声音失败: {str(e)}")
+            # 声音播放失败不影响主要功能，只记录调试日志

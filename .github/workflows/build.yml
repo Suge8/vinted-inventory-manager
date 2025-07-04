@@ -32,9 +32,9 @@ jobs:
 
     - name: Verify Windows executable
       run: |
-        if [ -f "dist/VintedInventoryManager.exe" ]; then
+        if [ -f "dist/Vinted 库存宝.exe" ]; then
           echo "✅ Windows .exe file created successfully"
-          ls -la dist/VintedInventoryManager.exe
+          ls -la "dist/Vinted 库存宝.exe"
         else
           echo "❌ Windows .exe file not found"
           ls -la dist/
@@ -46,7 +46,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: vinted-inventory-manager-windows
-        path: dist/VintedInventoryManager.exe
+        path: "dist/Vinted 库存宝.exe"
 
   build-macos:
     runs-on: macos-latest
@@ -70,13 +70,13 @@ jobs:
     - name: Create macOS app archive
       run: |
         cd dist
-        zip -r VintedInventoryManager-macOS.zip VintedInventoryManager.app
+        zip -r "Vinted 库存宝-macOS.zip" "Vinted 库存宝.app"
 
     - name: Upload macOS artifact
       uses: actions/upload-artifact@v4
       with:
         name: vinted-inventory-manager-macos
-        path: dist/VintedInventoryManager-macOS.zip
+        path: "dist/Vinted 库存宝-macOS.zip"
 
   # 暂时禁用自动Release，使用Artifacts下载
   # create-release:

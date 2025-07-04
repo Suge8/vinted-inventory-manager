@@ -21,7 +21,7 @@ def main():
         'pyinstaller',
         '--onefile',
         '--windowed',
-        '--name=VintedInventoryManager',
+        '--name=Vinted 库存宝',
         '--distpath=dist',
         '--workpath=build',
         '--specpath=.',
@@ -41,7 +41,7 @@ def main():
         print("Build successful!")
         
         # Check if exe file was created
-        exe_path = Path('dist/VintedInventoryManager.exe')
+        exe_path = Path('dist/Vinted 库存宝.exe')
         if exe_path.exists():
             size_mb = exe_path.stat().st_size / (1024 * 1024)
             print(f"Generated file: {exe_path}")

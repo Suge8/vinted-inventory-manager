@@ -85,9 +85,14 @@ class DataProcessor:
         # 统计总商品数量
         total_items = sum(user.item_count for user in result.users_with_inventory)
         
+        # 支持多管理员数据
+        admin_urls = result.admin_urls if hasattr(result, 'admin_urls') else [{'admin_name': '管理员1', 'url': getattr(result, 'admin_url', '')}]
+        admin_summary = result.admin_summary if hasattr(result, 'admin_summary') else {}
+
         return {
             'timestamp': result.timestamp,
-            'admin_url': result.admin_url,
+            'admin_urls': admin_urls,  # 支持多个管理员
+            'admin_summary': admin_summary,  # 每个管理员的统计
             'scraping_time': result.scraping_time,
             'total_users': total_users,
             'users_with_inventory': users_with_inventory,
@@ -115,14 +120,37 @@ class DataProcessor:
         lines = []
         
         # 报告头部
-        lines.append("=" * 50)
-        lines.append("VINTED.NL 库存管理报告")
-        lines.append("=" * 50)
+        lines.append("=" * 60)
+        lines.append("VINTED 库存宝 - 库存管理报告")
+        lines.append("=" * 60)
         lines.append(f"生成时间：{data['timestamp']}")
-        lines.append(f"管理员账户：{data['admin_url']}")
-        lines.append(f"总计账户数：{data['total_users']}")
+
+        # 支持多管理员显示
+        admin_urls = data.get('admin_urls', [])
+        if len(admin_urls) == 1:
+            lines.append(f"管理员账户：{admin_urls[0].get('admin_name', '管理员1')}")
+            lines.append(f"关注列表URL：{admin_urls[0].get('url', '')}")
+        else:
+            lines.append(f"管理员账户数：{len(admin_urls)} 个")
+            for i, admin_data in enumerate(admin_urls, 1):
+                lines.append(f"  {admin_data.get('admin_name', f'管理员{i}')}：{admin_data.get('url', '')}")
+
+        lines.append(f"总计关注账户数：{data['total_users']}")
         lines.append(f"采集耗时：{format_duration(data['scraping_time'])}")
         lines.append("")
+
+        # 管理员统计信息
+        admin_summary = data.get('admin_summary', {})
+        if admin_summary and len(admin_urls) > 1:
+            lines.append("=" * 40)
+            lines.append("各管理员关注统计")
+            lines.append("=" * 40)
+            for admin_name, summary in admin_summary.items():
+                if 'error' in summary:
+                    lines.append(f"{admin_name}：获取失败 - {summary['error']}")
+                else:
+                    lines.append(f"{admin_name}：关注 {summary.get('following_count', 0)} 个账户")
+            lines.append("")
         
         # 已出库账户（无商品在售）
         lines.append("=" * 30)
@@ -132,7 +160,8 @@ class DataProcessor:
         lines.append("")
         
         for user in data['no_inventory_users_data']:
-            lines.append(f"{user.profile_url} - 用户名：{user.username}")
+            admin_info = f" - 所属：{user.admin_name}" if hasattr(user, 'admin_name') and user.admin_name else ""
+            lines.append(f"{user.profile_url} - 用户名：{user.username}{admin_info}")
         
         if not data['no_inventory_users_data']:
             lines.append("（无）")
@@ -151,7 +180,8 @@ class DataProcessor:
             if len(user.items) > 5:
                 items_preview += f"... (共{len(user.items)}个商品)"
             
-            lines.append(f"{user.profile_url} - 用户名：{user.username} - 商品数量：{user.item_count}")
+            admin_info = f" - 所属：{user.admin_name}" if hasattr(user, 'admin_name') and user.admin_name else ""
+            lines.append(f"{user.profile_url} - 用户名：{user.username} - 商品数量：{user.item_count}{admin_info}")
             if items_preview:
                 lines.append(f"  商品列表：{items_preview}")
             lines.append("")
@@ -168,7 +198,8 @@ class DataProcessor:
         lines.append("")
         
         for user in data['error_users_data']:
-            lines.append(f"{user.profile_url} - 用户名：{user.username} - 错误类型：{user.error_message}")
+            admin_info = f" - 所属：{user.admin_name}" if hasattr(user, 'admin_name') and user.admin_name else ""
+            lines.append(f"{user.profile_url} - 用户名：{user.username} - 错误类型：{user.error_message}{admin_info}")
         
         if not data['error_users_data']:
             lines.append("（无）")

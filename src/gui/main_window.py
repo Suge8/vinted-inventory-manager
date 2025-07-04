@@ -66,7 +66,7 @@ class VintedInventoryApp:
     def setup_window(self):
         """设置主窗口"""
         # 设置现代简洁的窗口标题
-        self.root.title('Vinted.nl 库存宝')
+        self.root.title('Vinted 库存宝')
 
         # 设置窗口大小 - 减小高度，保持无滚动条
         window_size = self.config.get('ui', {}).get('window_size', '850x750')
@@ -89,7 +89,7 @@ class VintedInventoryApp:
     def get_version(self) -> str:
         """获取应用程序版本号"""
         # 直接返回当前版本，避免打包后文件路径问题
-        return "1.4.0"
+        return "2.0.0"
     
     def setup_logging(self):
         """设置日志系统"""
@@ -157,14 +157,38 @@ class VintedInventoryApp:
         # 存储窗口数据
         self.browser_windows = []
 
-        # Step 4: 关注列表URL
+        # Step 4: 管理员关注列表URL (支持多个)
         self.step4_frame = ttk.LabelFrame(parent, text="📋 Step 4", padding="10")
         # 不立即pack，等窗口选择后显示
 
-        ttk.Label(self.step4_frame, text="管理员关注列表 URL：").pack(anchor=tk.W)
-        self.following_url_var = tk.StringVar()
-        self.following_url_entry = ttk.Entry(self.step4_frame, textvariable=self.following_url_var, width=60)
-        self.following_url_entry.pack(fill=tk.X, pady=(5, 0))
+        # 标题和说明
+        title_frame = ttk.Frame(self.step4_frame)
+        title_frame.pack(fill=tk.X, pady=(0, 5))
+
+        ttk.Label(title_frame, text="管理员关注列表 URL (最多5个)：").pack(side=tk.LEFT)
+        ttk.Label(title_frame, text="支持多个管理员账号", font=("Arial", 8), foreground="gray").pack(side=tk.RIGHT)
+
+        # 存储URL输入框的列表
+        self.url_entries = []
+        self.url_vars = []
+        self.url_frames = []
+
+        # URL输入区域
+        self.urls_container = ttk.Frame(self.step4_frame)
+        self.urls_container.pack(fill=tk.X, pady=(5, 10))
+
+        # 添加第一个URL输入框
+        self.add_url_entry()
+
+        # 按钮区域
+        button_frame = ttk.Frame(self.step4_frame)
+        button_frame.pack(fill=tk.X)
+
+        self.add_url_button = ttk.Button(button_frame, text="➕ 添加管理员", command=self.add_url_entry)
+        self.add_url_button.pack(side=tk.LEFT)
+
+        self.remove_url_button = ttk.Button(button_frame, text="➖ 删除最后一个", command=self.remove_url_entry, state="disabled")
+        self.remove_url_button.pack(side=tk.LEFT, padx=(5, 0))
 
         # Step 5: 开始查询
         self.step5_frame = ttk.LabelFrame(parent, text="🚀 Step 5", padding="10")
@@ -189,6 +213,17 @@ class VintedInventoryApp:
 
         self.progress_label = ttk.Label(self.progress_frame, text="准备就绪")
         self.progress_label.pack(anchor=tk.W, pady=(2, 0))
+
+        # 已出库账号提醒区域
+        self.inventory_alert_frame = ttk.LabelFrame(self.step5_frame, text="🔔 已出库账号提醒", padding="5")
+        self.inventory_alert_frame.pack(fill=tk.X, pady=(10, 0))
+
+        # 已出库账号列表
+        self.inventory_alerts_text = tk.Text(self.inventory_alert_frame, height=3, wrap=tk.WORD,
+                                           font=("Arial", 9), bg="#fff3cd", fg="#856404")
+        self.inventory_alerts_text.pack(fill=tk.X)
+        self.inventory_alerts_text.insert(tk.END, "等待开始查询...")
+        self.inventory_alerts_text.config(state=tk.DISABLED)
 
         # Step 6: 查询结果 (初始隐藏)
         self.step6_frame = ttk.LabelFrame(parent, text="📊 Step 6", padding="10")
@@ -300,11 +335,18 @@ class VintedInventoryApp:
     def check_can_start_query(self):
         """检查是否可以开始查询"""
         window_selected = bool(self.window_var.get())
-        url_filled = bool(self.following_url_var.get().strip())
 
-        if window_selected and url_filled:
+        # 检查是否有有效的管理员URL
+        admin_urls = self.get_admin_urls() if hasattr(self, 'url_vars') else []
+        # 兼容旧的单URL系统
+        if not admin_urls and hasattr(self, 'following_url_var'):
+            url = self.following_url_var.get().strip()
+            if url:
+                admin_urls = [{'admin_name': '管理员1', 'url': url}]
+
+        if window_selected and len(admin_urls) > 0:
             self.start_button.config(state="normal")
-            self.query_status.config(text="可以开始查询", foreground="green")
+            self.query_status.config(text=f"准备查询 {len(admin_urls)} 个管理员账号", foreground="green")
             # 显示Step 5
             if not self.step5_frame.winfo_viewable():
                 self.step5_frame.pack(fill=tk.X, pady=(0, 10))
@@ -316,8 +358,8 @@ class VintedInventoryApp:
             self.start_button.config(state="disabled")
             if not window_selected:
                 self.query_status.config(text="请选择浏览器窗口", foreground="gray")
-            elif not url_filled:
-                self.query_status.config(text="请填写关注列表URL", foreground="gray")
+            elif len(admin_urls) == 0:
+                self.query_status.config(text="请至少输入一个管理员URL", foreground="gray")
 
     def refresh_browser_list(self):
         """刷新浏览器窗口列表"""
@@ -480,7 +522,14 @@ class VintedInventoryApp:
             # 验证配置
             api_url = self.api_url_var.get().strip()
             window_id = self.get_selected_window_id()
-            following_url = self.following_url_var.get().strip()
+
+            # 获取管理员URL列表
+            admin_urls = self.get_admin_urls() if hasattr(self, 'url_vars') else []
+            # 兼容旧的单URL系统
+            if not admin_urls and hasattr(self, 'following_url_var'):
+                url = self.following_url_var.get().strip()
+                if url:
+                    admin_urls = [{'admin_name': '管理员1', 'url': url}]
 
             if not api_url:
                 self.query_status.config(text="请输入API地址", foreground="red")
@@ -490,21 +539,22 @@ class VintedInventoryApp:
                 self.query_status.config(text="请选择浏览器窗口", foreground="red")
                 return
 
-            if not following_url:
-                self.query_status.config(text="请输入关注列表URL", foreground="red")
+            if not admin_urls:
+                self.query_status.config(text="请至少输入一个管理员URL", foreground="red")
                 return
 
-            # 验证URL
-            url_valid, url_message = validate_vinted_url(following_url)
-            if not url_valid:
-                self.query_status.config(text=f"URL错误: {url_message}", foreground="red")
-                return
+            # 验证所有URL
+            for admin_data in admin_urls:
+                url_valid, url_message = validate_vinted_url(admin_data['url'])
+                if not url_valid:
+                    self.query_status.config(text=f"{admin_data['admin_name']} URL错误: {url_message}", foreground="red")
+                    return
 
             # 构建配置
             config = {
                 'api_url': api_url,
                 'window_id': window_id,
-                'following_url': following_url
+                'admin_urls': admin_urls  # 使用多个管理员URL
             }
 
             # 保存配置
@@ -562,11 +612,23 @@ class VintedInventoryApp:
             def status_callback(message):
                 self.logger.info(message)
 
-            self.scraper.set_callbacks(progress_callback, status_callback)
+            def inventory_callback(username, admin_name):
+                self.gui_updater.call_in_main_thread(
+                    self.add_inventory_alert,
+                    username, admin_name
+                )
+
+            self.scraper.set_callbacks(progress_callback, status_callback, inventory_callback)
             
+            # 清空库存提醒区域
+            self.clear_inventory_alerts()
+
             # 开始采集
-            self.logger.info(f"开始采集关注列表: {config['following_url']}")
-            result = self.scraper.scrape_all_users(config['following_url'])
+            admin_urls = config['admin_urls']
+            self.logger.info(f"开始采集 {len(admin_urls)} 个管理员的关注列表")
+
+            # 使用新的多管理员采集方法
+            result = self.scraper.scrape_multiple_admins(admin_urls)
             
             # 生成报告
             self.logger.info("正在生成报告...")
@@ -758,3 +820,110 @@ class VintedInventoryApp:
                     self.browser_manager.cleanup()
             except Exception:
                 pass
+
+    def add_url_entry(self):
+        """添加URL输入框"""
+        if len(self.url_entries) >= 5:
+            messagebox.showwarning("提示", "最多只能添加5个管理员账号")
+            return
+
+        # 创建URL输入框架
+        url_frame = ttk.Frame(self.urls_container)
+        url_frame.pack(fill=tk.X, pady=2)
+
+        # 标签
+        label = ttk.Label(url_frame, text=f"管理员 {len(self.url_entries) + 1}:")
+        label.pack(side=tk.LEFT, padx=(0, 5))
+
+        # 输入框
+        url_var = tk.StringVar()
+        url_entry = ttk.Entry(url_frame, textvariable=url_var, width=50)
+        url_entry.pack(side=tk.LEFT, fill=tk.X, expand=True)
+
+        # 绑定变化事件
+        url_var.trace('w', lambda *args: self.check_can_start_query())
+
+        # 存储引用
+        self.url_entries.append(url_entry)
+        self.url_vars.append(url_var)
+        self.url_frames.append(url_frame)
+
+        # 更新按钮状态
+        self.update_url_buttons()
+        self.check_can_start_query()
+
+    def remove_url_entry(self):
+        """删除最后一个URL输入框"""
+        if len(self.url_entries) <= 1:
+            return
+
+        # 删除最后一个
+        last_frame = self.url_frames.pop()
+        last_entry = self.url_entries.pop()
+        last_var = self.url_vars.pop()
+
+        last_frame.destroy()
+
+        # 更新按钮状态
+        self.update_url_buttons()
+        self.check_can_start_query()
+
+    def update_url_buttons(self):
+        """更新URL按钮状态"""
+        # 添加按钮
+        if len(self.url_entries) >= 5:
+            self.add_url_button.config(state="disabled")
+        else:
+            self.add_url_button.config(state="normal")
+
+        # 删除按钮
+        if len(self.url_entries) <= 1:
+            self.remove_url_button.config(state="disabled")
+        else:
+            self.remove_url_button.config(state="normal")
+
+    def get_admin_urls(self):
+        """获取所有有效的管理员URL"""
+        urls = []
+        for i, var in enumerate(self.url_vars):
+            url = var.get().strip()
+            if url:
+                urls.append({
+                    'admin_name': f"管理员{i+1}",
+                    'url': url
+                })
+        return urls
+
+    def add_inventory_alert(self, username: str, admin_name: str):
+        """添加已出库账号提醒"""
+        try:
+            self.inventory_alerts_text.config(state=tk.NORMAL)
+
+            # 如果是第一个提醒，清空初始文本
+            if "等待开始查询..." in self.inventory_alerts_text.get("1.0", tk.END):
+                self.inventory_alerts_text.delete("1.0", tk.END)
+
+            # 添加新的提醒
+            alert_text = f"🔔 {username} ({admin_name}) - 已出库！\n"
+            self.inventory_alerts_text.insert(tk.END, alert_text)
+
+            # 滚动到最新内容
+            self.inventory_alerts_text.see(tk.END)
+
+            self.inventory_alerts_text.config(state=tk.DISABLED)
+
+            # 更新界面
+            self.root.update_idletasks()
+
+        except Exception as e:
+            self.logger.error(f"添加库存提醒失败: {str(e)}")
+
+    def clear_inventory_alerts(self):
+        """清空已出库账号提醒"""
+        try:
+            self.inventory_alerts_text.config(state=tk.NORMAL)
+            self.inventory_alerts_text.delete("1.0", tk.END)
+            self.inventory_alerts_text.insert(tk.END, "等待开始查询...")
+            self.inventory_alerts_text.config(state=tk.DISABLED)
+        except Exception as e:
+            self.logger.error(f"清空库存提醒失败: {str(e)}")
