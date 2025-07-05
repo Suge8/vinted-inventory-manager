@@ -11,7 +11,7 @@ import requests
 from pathlib import Path
 import logging
 import os
-from ..core.bitbrowser_api import BitBrowserManager
+from ..core.bitbrowser_api import BitBrowserAPI
 from ..core.vinted_scraper import VintedScraper
 
 # 设置CustomTkinter主题
