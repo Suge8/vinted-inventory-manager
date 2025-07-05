@@ -20,8 +20,8 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException, WebDriverException
 
 
-def retry_on_503(max_retries=3, delay=2):
-    """重试装饰器，专门处理503错误"""
+def retry_on_api_error(max_retries=5, delay=1):
+    """重试装饰器，处理各种API错误"""
     def decorator(func):
         @wraps(func)
         def wrapper(*args, **kwargs):
@@ -31,17 +31,32 @@ def retry_on_503(max_retries=3, delay=2):
                     result = func(*args, **kwargs)
                     return result
                 except requests.exceptions.HTTPError as e:
-                    if e.response.status_code == 503:
+                    # 处理HTTP错误（包括503）
+                    if e.response.status_code in [503, 502, 504, 500]:
                         last_exception = e
                         if attempt < max_retries - 1:
-                            time.sleep(delay * (attempt + 1))  # 递增延迟
+                            wait_time = delay * (2 ** attempt)  # 指数退避
+                            time.sleep(wait_time)
                             continue
                     raise e
-                except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as e:
+                except requests.exceptions.ProxyError as e:
+                    # 处理代理错误
                     last_exception = e
                     if attempt < max_retries - 1:
-                        time.sleep(delay * (attempt + 1))
+                        wait_time = delay * (attempt + 1)
+                        time.sleep(wait_time)
                         continue
+                    raise e
+                except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as e:
+                    # 处理连接错误和超时
+                    last_exception = e
+                    if attempt < max_retries - 1:
+                        wait_time = delay * (attempt + 1)
+                        time.sleep(wait_time)
+                        continue
+                    raise e
+                except Exception as e:
+                    # 其他未预期的错误，不重试
                     raise e
             raise last_exception
         return wrapper
@@ -54,7 +69,7 @@ class BitBrowserAPI:
     def __init__(self, api_url: str = "http://127.0.0.1:54345", timeout: int = 30):
         """
         初始化比特浏览器API客户端
-        
+
         Args:
             api_url: API服务地址
             timeout: 请求超时时间（秒）
@@ -64,8 +79,23 @@ class BitBrowserAPI:
         self.logger = logging.getLogger(__name__)
         self.session = requests.Session()
         self.session.timeout = timeout
+
+        # 绕过代理设置，直接连接本地API
+        self.session.proxies = {
+            'http': None,
+            'https': None
+        }
+
+        # 设置连接池参数，提高稳定性
+        adapter = requests.adapters.HTTPAdapter(
+            pool_connections=1,
+            pool_maxsize=1,
+            max_retries=0  # 禁用内置重试，使用我们自己的重试机制
+        )
+        self.session.mount('http://', adapter)
+        self.session.mount('https://', adapter)
         
-    @retry_on_503(max_retries=3, delay=2)
+    @retry_on_api_error(max_retries=5, delay=1)
     def test_connection(self) -> Tuple[bool, str]:
         """
         测试API连接状态
@@ -92,16 +122,75 @@ class BitBrowserAPI:
                 return False, f"API响应错误: {response.status_code}"
         except requests.exceptions.HTTPError as e:
             if e.response.status_code == 503:
-                return False, "BitBrowser服务暂时不可用(503)，请稍后重试"
+                return False, "BitBrowser服务暂时不可用(503)，已重试多次仍失败"
+            elif e.response.status_code in [502, 504]:
+                return False, f"BitBrowser网关错误({e.response.status_code})，请检查服务状态"
             return False, f"API HTTP错误: {e.response.status_code}"
+        except requests.exceptions.ProxyError:
+            return False, "代理连接错误，已尝试绕过代理仍失败，请检查网络设置"
         except requests.exceptions.ConnectionError:
-            return False, "无法连接到比特浏览器API，请确保比特浏览器已启动"
+            return False, "无法连接到比特浏览器API，请确保比特浏览器已启动且端口54345可用"
         except requests.exceptions.Timeout:
-            return False, "API连接超时，请检查网络连接"
+            return False, "API连接超时，已重试多次仍失败，请检查网络连接"
         except Exception as e:
             return False, f"连接测试失败: {str(e)}"
+
+    def diagnose_connection(self) -> str:
+        """
+        诊断连接问题，提供详细的故障排除信息
+
+        Returns:
+            诊断信息字符串
+        """
+        diagnosis = []
+
+        # 检查基本网络连接
+        try:
+            import socket
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.settimeout(5)
+            result = sock.connect_ex(('127.0.0.1', 54345))
+            sock.close()
+
+            if result == 0:
+                diagnosis.append("✅ 端口54345可访问")
+            else:
+                diagnosis.append("❌ 端口54345不可访问 - BitBrowser可能未启动")
+        except Exception as e:
+            diagnosis.append(f"❌ 网络检查失败: {str(e)}")
+
+        # 检查代理设置
+        import os
+        proxy_vars = ['HTTP_PROXY', 'HTTPS_PROXY', 'http_proxy', 'https_proxy']
+        proxy_found = False
+        for var in proxy_vars:
+            if os.environ.get(var):
+                diagnosis.append(f"⚠️ 发现代理设置: {var}={os.environ.get(var)}")
+                proxy_found = True
+
+        if not proxy_found:
+            diagnosis.append("✅ 未发现系统代理设置")
+
+        # 检查BitBrowser进程
+        try:
+            import psutil
+            bitbrowser_processes = []
+            for proc in psutil.process_iter(['pid', 'name']):
+                if 'bitbrowser' in proc.info['name'].lower():
+                    bitbrowser_processes.append(proc.info)
+
+            if bitbrowser_processes:
+                diagnosis.append(f"✅ 发现BitBrowser进程: {len(bitbrowser_processes)}个")
+            else:
+                diagnosis.append("❌ 未发现BitBrowser进程")
+        except ImportError:
+            diagnosis.append("⚠️ 无法检查进程状态（缺少psutil）")
+        except Exception as e:
+            diagnosis.append(f"⚠️ 进程检查失败: {str(e)}")
+
+        return "\n".join(diagnosis)
     
-    @retry_on_503(max_retries=3, delay=2)
+    @retry_on_api_error(max_retries=5, delay=1)
     def get_browser_list(self) -> List[Dict]:
         """
         获取浏览器窗口列表

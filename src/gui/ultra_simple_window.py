@@ -460,100 +460,89 @@ class UltraSimpleVintedApp:
             api_url = "http://127.0.0.1:54345"
             print(f"正在测试连接: {api_url}")
 
-            # 测试基础连接
-            response = requests.get(api_url, timeout=5)
-            print(f"基础连接响应: {response.status_code}")
+            # 使用改进的BitBrowser API
+            api = BitBrowserAPI(api_url)
+            success, message = api.test_connection()
 
-            if response.status_code == 200:
-                print("基础连接成功，尝试获取浏览器列表...")
+            print(f"API测试结果: {success}, 消息: {message}")
+
+            if success:
+                print("API连接成功，尝试获取浏览器列表...")
 
                 try:
-                    # 获取真实的浏览器窗口列表
-                    browser_response = requests.post(f"{api_url}/browser/list",
-                                                   json={"page": 0, "pageSize": 100},
-                                                   timeout=10)
+                    # 使用改进的API获取浏览器列表
+                    browsers = api.get_browser_list()
+                    print(f"获取到 {len(browsers)} 个浏览器窗口")
 
-                    print(f"浏览器列表API响应: {browser_response.status_code}")
+                    if browsers:
+                        self.window_list = []
+                        self.window_data = []  # 清空窗口数据
+                        for browser in browsers:
+                            if isinstance(browser, dict):
+                                # 获取浏览器信息
+                                name = browser.get('name', '未知窗口')
+                                seq = browser.get('seq', 'N/A')
+                                platform = browser.get('platform', '')
+                                browser_id = browser.get('id', '')
 
-                    if browser_response.status_code == 200:
-                        try:
-                            data = browser_response.json()
-                            print(f"API响应数据类型: {type(data)}")
-                            print(f"API响应内容: {data}")
-
-                            if isinstance(data, dict) and data.get('success') and 'data' in data:
-                                data_obj = data['data']
-                                # BitBrowser API返回的数据结构是 data.list
-                                browsers = data_obj.get('list', []) if isinstance(data_obj, dict) else data_obj
-                                self.window_list = []
-                                self.window_data = []  # 清空窗口数据
-
-                                if isinstance(browsers, list) and len(browsers) > 0:
-                                    for browser in browsers:
-                                        if isinstance(browser, dict):
-                                            # 获取浏览器信息
-                                            name = browser.get('name', '未知窗口')
-                                            seq = browser.get('seq', 'N/A')
-                                            platform = browser.get('platform', '')
-                                            browser_id = browser.get('id', '')
-
-                                            # 获取指纹信息
-                                            fingerprint = browser.get('browserFingerPrint', {})
-                                            if isinstance(fingerprint, dict):
-                                                os_type = fingerprint.get('ostype', 'PC')
-                                                core_product = fingerprint.get('coreProduct', 'chrome')
-                                            else:
-                                                os_type = 'PC'
-                                                core_product = 'chrome'
-
-                                            # 格式化显示信息
-                                            platform_name = self._extract_platform_name(platform)
-                                            display_name = f"{name} | {platform_name} | {os_type} | {core_product.title()} | #{seq}"
-
-                                            self.window_list.append(display_name)
-                                            # 存储完整的窗口数据
-                                            self.window_data.append({
-                                                'id': browser_id,
-                                                'name': name,
-                                                'display_name': display_name,
-                                                'browser_data': browser
-                                            })
-
-                                    print(f"找到 {len(self.window_list)} 个浏览器窗口")
-                                    # 在主线程中更新UI
-                                    self.root.after(0, self._connection_success)
+                                # 获取指纹信息
+                                fingerprint = browser.get('browserFingerPrint', {})
+                                if isinstance(fingerprint, dict):
+                                    os_type = fingerprint.get('ostype', 'PC')
+                                    core_product = fingerprint.get('coreProduct', 'chrome')
                                 else:
-                                    print("浏览器列表为空，使用默认窗口")
-                                    # 如果没有浏览器，创建一些默认选项
-                                    self.window_list = ["默认窗口1 | 未知平台 | PC | Chrome | #1",
-                                                      "默认窗口2 | 未知平台 | PC | Chrome | #2"]
-                                    self.root.after(0, self._connection_success)
-                            else:
-                                print("API数据格式不正确，使用默认窗口")
-                                self.window_list = ["默认窗口 | 未知平台 | PC | Chrome | #1"]
-                                self.root.after(0, self._connection_success)
-                        except Exception as json_error:
-                            print(f"解析JSON失败: {json_error}")
-                            error_msg = f"解析API响应失败: {str(json_error)}"
-                            self.root.after(0, lambda: self._connection_failed(error_msg))
+                                    os_type = 'PC'
+                                    core_product = 'chrome'
+
+                                # 格式化显示信息
+                                platform_name = self._extract_platform_name(platform)
+                                display_name = f"{name} | {platform_name} | {os_type} | {core_product.title()} | #{seq}"
+
+                                self.window_list.append(display_name)
+                                # 存储完整的窗口数据
+                                self.window_data.append({
+                                    'id': browser_id,
+                                    'name': name,
+                                    'display_name': display_name,
+                                    'browser_data': browser
+                                })
+
+                        print(f"找到 {len(self.window_list)} 个浏览器窗口")
+                        # 在主线程中更新UI
+                        self.root.after(0, self._connection_success)
                     else:
-                        print(f"浏览器列表API失败: {browser_response.status_code}")
-                        # API失败但基础连接成功，使用默认窗口
-                        self.window_list = ["默认窗口 | 未知平台 | PC | Chrome | #1"]
+                        print("浏览器列表为空，使用默认窗口")
+                        # 如果没有浏览器，创建一些默认选项
+                        self.window_list = ["默认窗口1 | 未知平台 | PC | Chrome | #1",
+                                          "默认窗口2 | 未知平台 | PC | Chrome | #2"]
                         self.root.after(0, self._connection_success)
 
                 except Exception as api_error:
-                    print(f"API调用异常: {api_error}")
+                    print(f"获取浏览器列表异常: {api_error}")
                     # API调用失败但基础连接成功，使用默认窗口
                     self.window_list = ["默认窗口 | 未知平台 | PC | Chrome | #1"]
                     self.root.after(0, self._connection_success)
             else:
-                error_msg = f"API错误: {response.status_code}"
-                self.root.after(0, lambda: self._connection_failed(error_msg))
+                # 连接失败，进行诊断
+                print("连接失败，开始诊断...")
+                diagnosis = api.diagnose_connection()
+                print(f"诊断结果:\n{diagnosis}")
+
+                # 将诊断信息添加到错误消息中
+                detailed_message = f"{message}\n\n🔍 诊断信息:\n{diagnosis}"
+                self.root.after(0, lambda: self._connection_failed(detailed_message))
 
         except Exception as e:
-            error_msg = str(e)
-            self.root.after(0, lambda: self._connection_failed(error_msg))
+            print(f"连接测试异常: {str(e)}")
+            # 即使出现异常也尝试诊断
+            try:
+                api = BitBrowserAPI("http://127.0.0.1:54345")
+                diagnosis = api.diagnose_connection()
+                detailed_error = f"连接失败: {str(e)}\n\n🔍 诊断信息:\n{diagnosis}"
+            except:
+                detailed_error = f"连接失败: {str(e)}"
+
+            self.root.after(0, lambda: self._connection_failed(detailed_error))
 
     def _extract_platform_name(self, platform_url):
         """从平台URL提取平台名称"""
