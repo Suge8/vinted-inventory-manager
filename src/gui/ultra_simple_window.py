@@ -175,7 +175,7 @@ class UltraSimpleVintedApp:
         # 版本号标签 - 放在右下角
         self.version_label = ctk.CTkLabel(
             self.main_frame,
-            text="v4.3.0",
+            text="v4.3.1",
             font=ctk.CTkFont(size=10),
             text_color="gray"
         )
