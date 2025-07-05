@@ -190,6 +190,7 @@ class UltraSimpleVintedApp:
         
     def reset_application_state(self):
         """重置应用状态到初始状态"""
+        # 强制停止所有运行状态
         self.is_running = False
         self.admin_urls = []
         self.current_step = "connect"
@@ -199,7 +200,26 @@ class UltraSimpleVintedApp:
         self.window_list = []
         self.window_data = []
         self.url_entries = []
+
+        # 清理浏览器管理器
+        self.browser_manager = None
+        self.scraper = None
+
         # 保持persistent_out_of_stock，因为这是用户希望保留的数据
+
+        # 取消所有可能的定时器
+        try:
+            # 取消所有after调用
+            for after_id in getattr(self, '_after_ids', []):
+                try:
+                    self.root.after_cancel(after_id)
+                except:
+                    pass
+            self._after_ids = []
+        except:
+            pass
+
+        self.logger.info(f"应用状态已重置: is_running={self.is_running}, admin_urls={len(self.admin_urls)}, current_step={self.current_step}")
 
     def clear_content(self):
         """清空内容区域"""
@@ -933,6 +953,7 @@ class UltraSimpleVintedApp:
         }
 
         # 初始化浏览器管理器
+        from ..core.bitbrowser_api import BitBrowserManager
         browser_manager = BitBrowserManager(bitbrowser_config)
 
         try:
