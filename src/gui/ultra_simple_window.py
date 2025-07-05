@@ -38,6 +38,7 @@ class UltraSimpleVintedApp:
             self.url_entries = []
             self.is_running = False
             self.interval_minutes = 5  # 默认间隔5分钟
+            self.admin_urls = []  # 确保初始化为空列表
 
             # 浏览器管理器
             self.browser_manager = None
@@ -181,9 +182,25 @@ class UltraSimpleVintedApp:
         )
         self.version_label.place(relx=0.98, rely=0.98, anchor="se")
 
+        # 确保应用状态完全重置
+        self.reset_application_state()
+
         # 显示初始界面
         self.show_connect_step()
         
+    def reset_application_state(self):
+        """重置应用状态到初始状态"""
+        self.is_running = False
+        self.admin_urls = []
+        self.current_step = "connect"
+        self.selected_windows = []
+        self.selected_window_ids = []
+        self.current_window_index = 0
+        self.window_list = []
+        self.window_data = []
+        self.url_entries = []
+        # 保持persistent_out_of_stock，因为这是用户希望保留的数据
+
     def clear_content(self):
         """清空内容区域"""
         for widget in self.content_frame.winfo_children():
