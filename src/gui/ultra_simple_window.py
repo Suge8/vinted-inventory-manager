@@ -176,7 +176,7 @@ class UltraSimpleVintedApp:
         # 版本号标签 - 放在右下角
         self.version_label = ctk.CTkLabel(
             self.main_frame,
-            text="v4.4.1",
+            text="v4.4.2",
             font=ctk.CTkFont(size=10),
             text_color="gray"
         )
@@ -1111,12 +1111,13 @@ class UltraSimpleVintedApp:
                 restocked_callback=simple_restocked_callback
             )
 
-            # 准备管理员URL数据
+            # 准备管理员URL数据，确保包含user_id
             admin_urls = []
             for admin_data in self.admin_urls:
                 admin_urls.append({
                     'admin_name': admin_data['admin_name'],
-                    'url': admin_data['url']
+                    'url': admin_data['url'],
+                    'user_id': admin_data['user_id']  # 确保包含user_id字段
                 })
 
             self.logger.info(f"开始采集 {len(admin_urls)} 个管理员的关注列表")

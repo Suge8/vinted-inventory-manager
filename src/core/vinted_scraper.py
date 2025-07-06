@@ -881,6 +881,7 @@ class VintedScraper:
 
                     # 为每个用户添加管理员信息，并过滤掉管理员自己
                     admin_id = admin_data.get('user_id', '')  # 获取管理员ID
+
                     filtered_users = []
                     for user in users:
                         # 过滤掉管理员自己（避免检查管理员自己的库存）
