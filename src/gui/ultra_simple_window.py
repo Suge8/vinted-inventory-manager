@@ -176,7 +176,7 @@ class UltraSimpleVintedApp:
         # 版本号标签 - 放在右下角
         self.version_label = ctk.CTkLabel(
             self.main_frame,
-            text="v4.4.0",
+            text="v4.4.1",
             font=ctk.CTkFont(size=10),
             text_color="gray"
         )
@@ -565,10 +565,9 @@ class UltraSimpleVintedApp:
                 diagnosis = api.diagnose_connection()
                 print(f"诊断结果:\n{diagnosis}")
 
-                # 将诊断信息和VPN指南添加到错误消息中
-                vpn_guide = api.get_vpn_troubleshooting_guide()
-                detailed_message = f"{message}\n\n🔍 诊断信息:\n{diagnosis}\n\n{vpn_guide}"
-                self.root.after(0, lambda: self._connection_failed(detailed_message))
+                # 提供简洁的错误分类和解决建议
+                simplified_message = self._get_simplified_error_message(message, diagnosis)
+                self.root.after(0, lambda: self._connection_failed(simplified_message))
 
         except Exception as e:
             print(f"连接测试异常: {str(e)}")
@@ -581,6 +580,59 @@ class UltraSimpleVintedApp:
                 detailed_error = f"连接失败: {str(e)}"
 
             self.root.after(0, lambda: self._connection_failed(detailed_error))
+
+    def _get_simplified_error_message(self, original_message: str, diagnosis: str) -> str:
+        """
+        根据错误类型提供简洁的错误消息和解决建议
+        """
+        # 检查错误类型
+        if "503" in original_message:
+            return (
+                "❌ 连接失败: BitBrowser服务暂时不可用\n\n"
+                "🔧 解决方案:\n"
+                "1. 检查BitBrowser是否正常运行\n"
+                "2. 如使用VPN，请设置为TUN模式\n"
+                "3. 稍等片刻后重试连接\n\n"
+                "💡 详细VPN配置指南请查看项目文档"
+            )
+        elif "代理" in original_message or "proxy" in original_message.lower():
+            return (
+                "❌ 连接失败: 代理设置干扰本地连接\n\n"
+                "🔧 解决方案:\n"
+                "1. 将VPN设置为TUN模式而非代理模式\n"
+                "2. 在代理设置中排除127.0.0.1和localhost\n"
+                "3. 临时关闭VPN测试连接\n\n"
+                "💡 详细配置方法请查看VPN_GUIDE.md"
+            )
+        elif "超时" in original_message or "timeout" in original_message.lower():
+            return (
+                "❌ 连接失败: 连接超时\n\n"
+                "🔧 解决方案:\n"
+                "1. 检查BitBrowser是否已启动\n"
+                "2. 确认端口54345未被占用\n"
+                "3. 检查防火墙设置\n"
+                "4. 重启BitBrowser后重试"
+            )
+        elif "54345" in original_message:
+            return (
+                "❌ 连接失败: 无法连接到BitBrowser API\n\n"
+                "🔧 解决方案:\n"
+                "1. 启动BitBrowser应用程序\n"
+                "2. 确认API服务正在运行\n"
+                "3. 检查端口54345是否可用\n"
+                "4. 以管理员权限运行BitBrowser"
+            )
+        else:
+            # 通用错误消息
+            return (
+                f"❌ 连接失败: {original_message}\n\n"
+                "🔧 常见解决方案:\n"
+                "1. 确保BitBrowser已启动并运行\n"
+                "2. 检查网络连接和防火墙设置\n"
+                "3. 如使用VPN，请配置为TUN模式\n"
+                "4. 重启应用程序后重试\n\n"
+                "💡 如问题持续，请查看VPN_GUIDE.md获取详细帮助"
+            )
 
     def _extract_platform_name(self, platform_url):
         """从平台URL提取平台名称"""
@@ -1026,12 +1078,31 @@ class UltraSimpleVintedApp:
                 if not profile_url:
                     profile_url = f"https://www.vinted.nl/member/{username}"
 
-                alert_text = f"{username}({profile_url})"
+                # 需要匹配包含管理员ID的完整格式
+                # 先尝试匹配包含管理员ID的格式
+                if admin_id:
+                    alert_text_with_admin = f"{username}({profile_url})管理员ID:{admin_id}"
+                    if alert_text_with_admin in self.persistent_out_of_stock:
+                        self.persistent_out_of_stock.remove(alert_text_with_admin)
+                        self.root.after(0, lambda: self._refresh_alerts_display())
+                        self.logger.info(f"账号已补货，从待补货列表移除: {alert_text_with_admin}")
+                        return
 
-                if alert_text in self.persistent_out_of_stock:
-                    self.persistent_out_of_stock.remove(alert_text)
+                # 如果没有找到包含管理员ID的，尝试匹配不包含管理员ID的格式（向后兼容）
+                alert_text_basic = f"{username}({profile_url})"
+                if alert_text_basic in self.persistent_out_of_stock:
+                    self.persistent_out_of_stock.remove(alert_text_basic)
                     self.root.after(0, lambda: self._refresh_alerts_display())
-                    self.logger.info(f"账号已补货，从待补货列表移除: {alert_text}")
+                    self.logger.info(f"账号已补货，从待补货列表移除: {alert_text_basic}")
+                    return
+
+                # 如果都没找到，尝试模糊匹配（用户名匹配）
+                for item in list(self.persistent_out_of_stock):
+                    if item.startswith(f"{username}("):
+                        self.persistent_out_of_stock.remove(item)
+                        self.root.after(0, lambda: self._refresh_alerts_display())
+                        self.logger.info(f"账号已补货，从待补货列表移除: {item}")
+                        break
 
             scraper.set_callbacks(
                 progress_callback=simple_progress_callback,
@@ -1153,10 +1224,13 @@ class UltraSimpleVintedApp:
                     alert_frame = ctk.CTkFrame(self.alerts_scroll_frame, fg_color="transparent")
                     alert_frame.pack(fill="x", pady=2, padx=5)
 
+                    # 解析并格式化显示文本，突出显示管理员ID
+                    display_text = self._format_alert_display_text(alert_text)
+
                     # 账号信息标签
                     alert_label = ctk.CTkLabel(
                         alert_frame,
-                        text=alert_text,
+                        text=display_text,
                         font=ctk.CTkFont(size=12),
                         anchor="w"
                     )
@@ -1181,6 +1255,24 @@ class UltraSimpleVintedApp:
                     text_color="gray"
                 )
                 no_alerts_label.pack(pady=20)
+
+    def _format_alert_display_text(self, alert_text: str) -> str:
+        """
+        格式化待补货账号的显示文本，确保管理员ID清晰可见
+        """
+        # 检查是否包含管理员ID信息
+        if "管理员ID:" in alert_text:
+            # 分离用户名、URL和管理员ID
+            parts = alert_text.split("管理员ID:")
+            if len(parts) == 2:
+                user_part = parts[0]  # username(profile_url)
+                admin_id = parts[1]   # xxxxx
+
+                # 重新格式化，使管理员ID更突出
+                return f"{user_part}\n📋 管理员ID: {admin_id}"
+
+        # 如果没有管理员ID信息，直接返回原文本
+        return alert_text
 
     def _remove_alert(self, alert_text):
         """移除单个待补货账号"""
