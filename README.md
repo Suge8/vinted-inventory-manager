@@ -48,7 +48,8 @@
 - 🎵 音效提醒：发现待补货账号时播放提示音
 - ⚠️ 视觉提醒：橙色警告图标闪烁
 - 📋 持久显示：待补货账号列表持续显示
-- 🔄 自动更新：补货后自动从列表移除
+- � 管理员归属：显示每个账号所属的管理员ID
+- �🔄 自动更新：补货后自动从列表移除
 
 ### 🖥️ **现代化界面**
 - 简洁直观的操作流程，按提示操作即可
@@ -116,9 +117,31 @@
 
 ### 3️⃣ **开始监控**
 1. **选择浏览器窗口**: 从列表中选择已登录的窗口
-2. **添加管理员账户**: 输入要监控的管理员用户ID
+2. **添加管理员账户**: 输入要监控的管理员用户ID（支持无限数量）
 3. **设置监控参数**: 可配置循环间隔时间
 4. **开始监控**: 按界面提示操作，系统将自动循环检查
+
+## 🌐 VPN/代理配置指南
+
+### 🔧 **连接问题解决**
+如果遇到BitBrowser API连接问题（如503错误），请参考：
+
+📖 **详细指南**: [VPN_GUIDE.md](VPN_GUIDE.md)
+
+### 🚀 **快速解决方案**
+1. **VPN TUN模式**（推荐）
+   - ExpressVPN: 启用Split Tunneling，排除BitBrowser
+   - NordVPN: 使用NordLynx协议，配置应用排除
+   - Surfshark: 启用Bypasser功能
+
+2. **系统代理排除**
+   - Windows: 在代理设置中添加 `127.0.0.1;localhost`
+   - macOS: 在网络设置中忽略本地地址
+
+3. **应急方案**
+   - 临时关闭VPN测试连接
+   - 使用移动热点排除网络问题
+   - 检查防火墙设置
 
 ## 🔍 工作原理
 
@@ -356,7 +379,8 @@ A specialized inventory management tool designed for Vinted e-commerce platform 
 - 🎵 Audio alerts: Play notification sound when out-of-stock accounts are found
 - ⚠️ Visual alerts: Orange warning icon flashing
 - 📋 Persistent display: Out-of-stock account list continuously displayed
-- 🔄 Auto-update: Automatically remove from list after restocking
+- � Admin Attribution: Display which admin ID each account belongs to
+- �🔄 Auto-update: Automatically remove from list after restocking
 
 #### 🖥️ **Modern Interface**
 - Simple and intuitive 6-step operation process
@@ -393,8 +417,9 @@ Go to [Releases page](https://github.com/Suge8/vinted-inventory-manager/releases
 
 #### 3️⃣ **Start Monitoring**
 1. **Select Browser Window**: Choose logged-in window from the list
-2. **Add Admin Account**: Enter admin user ID to monitor
+2. **Add Admin Account**: Enter admin user ID to monitor (unlimited accounts supported)
 3. **Configure Parameters**: Set monitoring interval time
+4. **VPN/Proxy Setup**: If connection issues occur, see [VPN_GUIDE.md](VPN_GUIDE.md)
 4. **Start Monitoring**: Follow interface prompts, system will automatically loop check
 
 ### 🔍 How It Works

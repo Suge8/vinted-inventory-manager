@@ -176,7 +176,7 @@ class UltraSimpleVintedApp:
         # 版本号标签 - 放在右下角
         self.version_label = ctk.CTkLabel(
             self.main_frame,
-            text="v4.3.4",
+            text="v4.4.0",
             font=ctk.CTkFont(size=10),
             text_color="gray"
         )
@@ -565,8 +565,9 @@ class UltraSimpleVintedApp:
                 diagnosis = api.diagnose_connection()
                 print(f"诊断结果:\n{diagnosis}")
 
-                # 将诊断信息添加到错误消息中
-                detailed_message = f"{message}\n\n🔍 诊断信息:\n{diagnosis}"
+                # 将诊断信息和VPN指南添加到错误消息中
+                vpn_guide = api.get_vpn_troubleshooting_guide()
+                detailed_message = f"{message}\n\n🔍 诊断信息:\n{diagnosis}\n\n{vpn_guide}"
                 self.root.after(0, lambda: self._connection_failed(detailed_message))
 
         except Exception as e:
@@ -802,9 +803,17 @@ class UltraSimpleVintedApp:
             
     def add_url_entry(self):
         """添加用户ID输入框"""
-        if len(self.url_entries) >= 5:
-            messagebox.showwarning("提示", "最多只能添加5个管理员账号")
-            return
+        # 移除5个管理员的限制，允许无限制添加
+        # 但添加合理的性能提醒
+        if len(self.url_entries) >= 20:
+            result = messagebox.askyesno(
+                "性能提醒",
+                f"当前已有{len(self.url_entries)}个管理员账号。\n"
+                "过多的管理员账号可能影响查询性能。\n"
+                "是否继续添加？"
+            )
+            if not result:
+                return
 
         entry_number = len(self.url_entries) + 1
         placeholder_text = f"管理员 ID {entry_number}"
@@ -995,8 +1004,11 @@ class UltraSimpleVintedApp:
                 if not profile_url:
                     profile_url = f"https://www.vinted.nl/member/{username}"
 
-                # 构建显示文本：用户名(profile_url) - 不显示管理员信息
-                alert_text = f"{username}({profile_url})"
+                # 构建显示文本：包含管理员ID信息
+                if admin_id:
+                    alert_text = f"{username}({profile_url})管理员ID:{admin_id}"
+                else:
+                    alert_text = f"{username}({profile_url})"
 
                 # 检查是否已经在列表中，避免重复添加和重复报警
                 if alert_text not in self.persistent_out_of_stock:

@@ -1,3 +1,0 @@
-([('Vinted 库存宝',
-   '/Users/sugeh/Desktop/do-script/vinted-inventory-manager/dist/Vinted 库存宝',
-   'EXECUTABLE')],)

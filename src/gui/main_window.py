@@ -879,9 +879,17 @@ class VintedInventoryApp:
 
     def add_url_entry(self):
         """添加URL输入框"""
-        if len(self.url_entries) >= 5:
-            messagebox.showwarning("提示", "最多只能添加5个管理员账号")
-            return
+        # 移除5个管理员的限制，允许无限制添加
+        # 但添加合理的性能提醒
+        if len(self.url_entries) >= 20:
+            result = messagebox.askyesno(
+                "性能提醒",
+                f"当前已有{len(self.url_entries)}个管理员账号。\n"
+                "过多的管理员账号可能影响查询性能。\n"
+                "是否继续添加？"
+            )
+            if not result:
+                return
 
         # 创建URL输入框架
         url_frame = ttk.Frame(self.urls_container)
